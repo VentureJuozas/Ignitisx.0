@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ignitis — Household flexibility onboarding (mockup)</title>
+<link rel="icon" href="assets/ignitis-mark.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<div class="app" id="app">
+
+  <header class="topbar">
+    <img src="assets/ignitis-logo.png" alt="Ignitis">
+    <div class="brandrule"></div>
+    <div class="brandtag">Innovation unit · concept mockup</div>
+    <nav class="steps" id="steps" aria-label="Flow progress"></nav>
+    <button class="topbtn" id="presenterBtn">Presenter view <span style="opacity:.55">P</span></button>
+    <button class="topbtn" id="railBtn">Hide agent</button>
+    <button class="topbtn" id="resetBtn">Restart</button>
+  </header>
+
+  <main class="stage" id="stage"></main>
+
+  <footer class="footbar">
+    <div class="footnote" id="footnote"></div>
+    <button class="btn ghost" id="backBtn">Back</button>
+    <button class="btn" id="nextBtn">Continue</button>
+  </footer>
+
+  <aside class="rail">
+    <div class="railhead">
+      <img src="assets/ignitis-mark.png" alt="">
+      <div><b>Ignitis assistant</b><span id="agentRole">Reading your meter data</span></div>
+    </div>
+    <div class="railbody" id="railBody"></div>
+    <div class="asks" id="asks"></div>
+  </aside>
+
+</div>
+
+<section class="presenter" id="presenter" hidden>
+  <button class="close" id="presenterClose">Close</button>
+  <div class="pgrid">
+    <div>
+      <h4>4 A's live on this screen</h4>
+      <div class="pills" id="pPills"></div>
+      <p id="pNote"></p>
+    </div>
+    <div>
+      <h4>What is being monetised</h4>
+      <div id="pUnits"></div>
+    </div>
+    <div>
+      <h4>The four tests</h4>
+      <div id="pTests"></div>
+    </div>
+  </div>
+</section>
+
+<script src="js/model.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
