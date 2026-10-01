@@ -34,6 +34,7 @@
 
 /* Two tiles rather than four, so they must not stretch to fill the card. */
 .kit-pair { max-width: 260px; }
+.kit-triple { max-width: 380px; }
 
 /* ---------- three-party strip ---------- */
 

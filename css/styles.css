@@ -182,7 +182,11 @@ button { font: inherit; color: inherit; }
   background: linear-gradient(150deg, rgba(0, 201, 183, .26), rgba(59, 82, 220, .22));
   color: var(--navy); border-color: rgba(59, 82, 220, .22);
 }
-.kititem.later .tile { background: #fff; border: 1.5px dashed var(--peri); color: var(--peri); }
+.kititem.owned .tile {
+  background: #eef6f3; border: 1.5px solid #b7d9cc; color: var(--navy-70);
+}
+.kititem.owned b { color: var(--navy-70); }
+.kititem.owned em { color: var(--ok); }
 .kititem.out .tile { background: #f1f3f8; color: var(--navy-45); }
 /* thin diagonal marks the thing you don't get, without hiding the icon */
 .kititem.out .tile::after {
