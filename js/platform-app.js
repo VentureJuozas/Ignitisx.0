@@ -6,7 +6,7 @@ const state = {
   i: 0,
   approach: null,      // null until he picks; only "financed" is offered
   contractor: null,
-  lender: "ft",
+  lender: "seb",
   dispatch: null,      // null until he answers, then "yes" or "no"
   formFilled: false,
   log: [],
@@ -66,6 +66,26 @@ function kitStrip(c) {
 
 const stars = (c) => `<div class="stars"><em>★</em>${NUM(c.rating, 1)}
   <span>${c.reviews} ${t({ lt: "atsiliepimai", en: "reviews" })}</span></div>`;
+
+/* Brand marks for contractors and financing partners. Keep the name in the
+   markup as a fallback; the image carries recognition on the card. */
+const brandLogo = (src, name, cls = "brandlogo") =>
+  src
+    ? `<img class="${cls}" src="${src}" alt="${name}" title="${name}" loading="lazy">`
+    : "";
+
+const contractorLogo = (c, cls = "brandlogo contractor") => brandLogo(c?.logo, c?.name || "", cls);
+const lenderLogo = (lender, cls = "brandlogo partner") => brandLogo(lender?.logo, lender?.name || "", cls);
+
+const lenderStrip = (cls = "partnerstrip") =>
+  `<div class="${cls}" aria-label="${t({ lt: "Finansavimo partneriai", en: "Financing partners" })}">` +
+  LENDERS.map((p) => brandLogo(p.logo, p.name, "brandlogo partner strip")).join("") +
+  `</div>`;
+
+const contractorStrip = (cls = "contractorstrip") =>
+  `<div class="${cls}" aria-label="${t({ lt: "Rangovai", en: "Contractors" })}">` +
+  CONTRACTORS.map((c) => brandLogo(c.logo, c.name, "brandlogo contractor strip")).join("") +
+  `</div>`;
 
 /* Where the monthly figure comes from. Four lines, a total, and then the
    comparison that actually matters: the current bill and the difference. */
@@ -212,18 +232,22 @@ const SCREENS = [
       ["hardhat", t({ lt: "Rangovas", en: "Contractor" }),
         t({ lt: "Parduoda ir įrengia", en: "Supplies and installs" }),
         t({ lt: "Jūs pasirenkate iš platformoje patikrintų rangovų. Įranga, montavimas ir servisas — viename pasiūlyme, su viena garantija.",
-            en: "You choose from vetted contractors on the platform. Equipment, installation and service in one bundle, under one warranty." })],
+            en: "You choose from vetted contractors on the platform. Equipment, installation and service in one bundle, under one warranty." }),
+        contractorStrip()],
       ["card", t({ lt: "Finansavimo partneris", en: "Financing partner" }),
         t({ lt: "Sumoka už įrangą", en: "Pays for the equipment" }),
         t({ lt: `Vartojimo kreditas pardavimo vietoje: ${LOAN_YEARS} ${YEARS(LOAN_YEARS)}, 0 € pradinis įnašas. Pasirenkate vieną iš ${LENDERS.length} platformos partnerių.`,
-            en: `A point-of-sale consumer loan over ${LOAN_YEARS} years with nothing upfront. You pick one of ${LENDERS.length} partners on the platform.` })],
+            en: `A point-of-sale consumer loan over ${LOAN_YEARS} years with nothing upfront. You pick one of ${LENDERS.length} partners on the platform.` }),
+        lenderStrip()],
       ["bolt", "Ignitis", t({ lt: "Valdo ir dalijasi verte", en: "Operates and shares the value" }),
         t({ lt: `Mes valdome kaupiklį, tiekiame elektrą ir viską sudedame į vieną sąskaitą. Tai, ką kaupiklis uždirba rinkoje, dalijamės ${Math.round(FLEX.share * 100)}/${Math.round((1 - FLEX.share) * 100)}.`,
-            en: `We operate the battery, supply the electricity and put all of it on one invoice. What the battery earns in the market is split ${Math.round(FLEX.share * 100)}/${Math.round((1 - FLEX.share) * 100)}.` })],
-    ].map(([ic, who, b, p]) => `
+            en: `We operate the battery, supply the electricity and put all of it on one invoice. What the battery earns in the market is split ${Math.round(FLEX.share * 100)}/${Math.round((1 - FLEX.share) * 100)}.` }),
+        `<div class="partnerstrip ignitis"><img class="brandlogo ignitis" src="assets/ignitis-logo.png" alt="Ignitis"></div>`],
+    ].map(([ic, who, b, p, logos]) => `
       <div class="role">
         <div class="ic3">${icon(ic, "ico big")}</div>
         <div class="who">${who}</div><b>${b}</b><p>${p}</p>
+        ${logos}
       </div>`).join("");
 
     return `
@@ -309,9 +333,12 @@ const SCREENS = [
       return `<button class="rcard ${state.contractor === c.id ? "sel" : ""}" data-contractor="${c.id}">
         ${badge ? `<span class="badge">${badge}</span>` : ""}
         <div class="rhead">
-          <div>
-            <h3>${c.name}</h3>
-            <div class="since">${t({ lt: `Nuo ${c.since} m. · ${c.installs} įrengimų`, en: `Since ${c.since} · ${c.installs} installations` })}</div>
+          <div class="rbrand">
+            ${contractorLogo(c, "brandlogo contractor card")}
+            <div>
+              <h3>${c.name}</h3>
+              <div class="since">${t({ lt: `Nuo ${c.since} m. · ${c.installs} įrengimų`, en: `Since ${c.since} · ${c.installs} installations` })}</div>
+            </div>
           </div>
           ${stars(c)}
         </div>
@@ -437,7 +464,10 @@ const SCREENS = [
     const lenderCards = LENDERS.map((lender) => {
       const lq = quote(state.contractor, lender.id);
       return `<button class="dcard ${state.lender === lender.id ? "sel" : ""}" data-lender="${lender.id}">
-        <h3>${lender.name}</h3>
+        <div class="dcardhead">
+          ${lenderLogo(lender, "brandlogo partner term")}
+          <h3>${lender.name}</h3>
+        </div>
         <p>${t({ lt: `${LOAN_YEARS} ${YEARS(LOAN_YEARS)} · ${NUM(lender.rate * 100, 1)} % · ${EUR(0)} pradinis įnašas`,
                  en: `${LOAN_YEARS} years · ${NUM(lender.rate * 100, 1)}% · ${EUR(0)} upfront` })}
           ${lender.id === cheapestRate ? `<em style="font-style:normal;color:var(--ok)"> · ${t({ lt: "mažiausia norma", en: "lowest rate" })}</em>` : ""}</p>
@@ -459,17 +489,23 @@ const SCREENS = [
 
     return `
       <div class="eyebrow">${t({ lt: "Pasirinktas rangovas", en: "Selected contractor" })}</div>
-      <h1>${c.name}</h1>
+      <div class="selectedbrand">
+        ${contractorLogo(c, "brandlogo contractor hero")}
+        <h1>${c.name}</h1>
+      </div>
       <p class="lede">${t({
         lt: "Įranga ir montavimas iš rangovo, pinigai iš finansavimo partnerio, atsiskaitymas per Ignitis. Pradinis įnašas — nulis pas visus partnerius.",
         en: "Equipment and installation from the contractor, money from the financing partner, settlement through Ignitis. Zero upfront with every partner." })}</p>
 
       <div class="card stack">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap">
-          <div>
-            <h3>${t({ lt: "Kas bus įrengta", en: "What gets installed" })}</h3>
-            <p style="font-size:13px;color:var(--navy-45);margin-top:4px">
-              ${t(c.brands)} · ${EUR(c.price)} · ${t({ lt: `montavimas per ${c.leadWeeks} sav.`, en: `installed in ${c.leadWeeks} weeks` })}</p>
+          <div class="rbrand compact">
+            ${contractorLogo(c, "brandlogo contractor inline")}
+            <div>
+              <h3>${t({ lt: "Kas bus įrengta", en: "What gets installed" })}</h3>
+              <p style="font-size:13px;color:var(--navy-45);margin-top:4px">
+                ${t(c.brands)} · ${EUR(c.price)} · ${t({ lt: `montavimas per ${c.leadWeeks} sav.`, en: `installed in ${c.leadWeeks} weeks` })}</p>
+            </div>
           </div>
           <button class="linkbtn" data-goto="2">${t({ lt: "Keisti rangovą", en: "Change contractor" })}</button>
         </div>
@@ -606,7 +642,10 @@ const SCREENS = [
     ];
 
     return `
-      <div class="eyebrow">${t({ lt: `Paskutinis žingsnis · vartojimo kreditas`, en: `The last step · consumer credit` })}</div>
+      <div class="eyebrow partnerline">
+        ${lenderLogo(q.lender, "brandlogo partner eyebrow")}
+        <span>${t({ lt: `Paskutinis žingsnis · vartojimo kreditas`, en: `The last step · consumer credit` })}</span>
+      </div>
       <h1>${t({ lt: `Paraiška finansavimui — „${q.lender.name}“`, en: `Financing application — ${q.lender.name}` })}</h1>
       <p class="lede">${t({
         lt: `Tai paskutinis žingsnis, kurį atliekate Jūs. Paraišką vertins „${q.lender.name}“ — Jūsų pasirinktas finansavimo partneris. Įrangos suma, terminas ir pradinis įnašas jau įrašyti, lieka tik Jūsų duomenys.`,
@@ -632,9 +671,12 @@ const SCREENS = [
         </div>
         <div class="sentto">
           <span style="color:var(--blue)">${icon("shield")}</span>
-          <span>${t({
-            lt: `Duomenys perduodami partneriui „${q.lender.name}“, ne Ignitis. Mes matome tik sprendimą: taip arba ne.`,
-            en: `The data goes to ${q.lender.name}, not to Ignitis. We see only the decision: yes or no.` })}</span>
+          <span class="sentto-brand">
+            ${lenderLogo(q.lender, "brandlogo partner inline")}
+            <span>${t({
+              lt: `Duomenys perduodami partneriui „${q.lender.name}“, ne Ignitis. Mes matome tik sprendimą: taip arba ne.`,
+              en: `The data goes to ${q.lender.name}, not to Ignitis. We see only the decision: yes or no.` })}</span>
+          </span>
         </div>
       </div>`;
   },
@@ -676,17 +718,20 @@ const SCREENS = [
       <div class="decision pending">
         <span class="wait">${icon("clock")} ${t({ lt: "Vertinama", en: "Under review" })}</span>
         <h2>${EUR(c.price)} · ${q.years} ${YEARS(q.years)} · ${EUR(q.loan, 2)}/${t({ lt: "mėn.", en: "mo" })}</h2>
-        <div class="by">${t({
+        <div class="by partnerline">
+          ${lenderLogo(q.lender, "brandlogo partner inline")}
+          <span>${t({
           lt: `„${q.lender.name}“ · ${NUM(q.lender.rate * 100, 1)} % metinės palūkanos · pradinis įnašas ${EUR(0)} · sprendimas per 2 darbo dienas`,
-          en: `${q.lender.name} · ${NUM(q.lender.rate * 100, 1)}% annual interest · ${EUR(0)} upfront · a decision within 2 working days` })}</div>
+          en: `${q.lender.name} · ${NUM(q.lender.rate * 100, 1)}% annual interest · ${EUR(0)} upfront · a decision within 2 working days` })}</span>
+        </div>
       </div>
 
       <div class="card stack">
         <h3>${t({ lt: "Pateiktas pasiūlymas", en: "The deal as submitted" })}</h3>
         <div class="brk" style="margin-top:10px">
-          <div class="l">${c.name}<em>${t(c.brands)} · ${NUM(c.pv)} kW · ${NUM(c.inverter, 0)} kW · ${NUM(c.battery, 0)} kWh</em></div>
+          <div class="l"><span class="partyline">${contractorLogo(c, "brandlogo contractor mini")}${c.name}</span><em>${t(c.brands)} · ${NUM(c.pv)} kW · ${NUM(c.inverter, 0)} kW · ${NUM(c.battery, 0)} kWh</em></div>
           <div class="v mono">${EUR(c.price)}</div></div>
-        <div class="brk"><div class="l">${q.lender.name}
+        <div class="brk"><div class="l"><span class="partyline">${lenderLogo(q.lender, "brandlogo partner mini")}${q.lender.name}</span>
           <em>${t({ lt: `${q.years} ${YEARS(q.years)} · ${NUM(q.lender.rate * 100, 1)} % · pradinis įnašas ${EUR(0)}`,
                      en: `${q.years} years · ${NUM(q.lender.rate * 100, 1)}% · ${EUR(0)} upfront` })}</em></div>
           <div class="v mono">${EUR(q.loan, 2)}/${t({ lt: "mėn.", en: "mo" })}</div></div>
@@ -747,22 +792,25 @@ const SCREENS = [
       <div class="decision">
         <span class="ok">${icon("check")} ${t({ lt: "Paraiška patvirtinta", en: "Application approved" })}</span>
         <h2>${EUR(q.contractor.price)} · ${q.years} ${YEARS(q.years)} · ${EUR(q.loan, 2)}/${t({ lt: "mėn.", en: "mo" })}</h2>
-        <div class="by">${t({
+        <div class="by partnerline">
+          ${lenderLogo(q.lender, "brandlogo partner inline")}
+          <span>${t({
           lt: `„${q.lender.name}“ · ${NUM(q.lender.rate * 100, 1)} % metinės palūkanos · pradinis įnašas ${EUR(0)} · patvirtinta tokia suma, kokios prašyta`,
-          en: `${q.lender.name} · ${NUM(q.lender.rate * 100, 1)}% annual interest · ${EUR(0)} upfront · approved as requested` })}</div>
+          en: `${q.lender.name} · ${NUM(q.lender.rate * 100, 1)}% annual interest · ${EUR(0)} upfront · approved as requested` })}</span>
+        </div>
       </div>
 
       <div class="card stack">
         <h3>${t({ lt: "Kas patvirtinta", en: "What was approved" })}</h3>
         <div class="brk" style="margin-top:10px">
           <div class="l">${t({ lt: "Finansuojama suma", en: "Amount financed" })}
-            <em>${q.contractor.name} · ${t(q.contractor.brands)}</em></div>
+            <em class="partyline">${contractorLogo(q.contractor, "brandlogo contractor mini")}${q.contractor.name} · ${t(q.contractor.brands)}</em></div>
           <div class="v mono">${EUR(q.contractor.price)}</div></div>
         <div class="brk"><div class="l">${t({ lt: "Pradinis įnašas", en: "Upfront payment" })}
           <em>${t({ lt: "Nekeičiamas nė pas vieną partnerį", en: "Unchanged with every partner" })}</em></div>
           <div class="v mono">${EUR(0)}</div></div>
         <div class="brk"><div class="l">${t({ lt: "Mėnesio įmoka", en: "Monthly instalment" })}
-          <em>${t({ lt: `„${q.lender.name}“ · ${q.years} ${YEARS(q.years)} · ${NUM(q.lender.rate * 100, 1)} %`, en: `${q.lender.name} · ${q.years} years · ${NUM(q.lender.rate * 100, 1)}%` })}</em></div>
+          <em class="partyline">${lenderLogo(q.lender, "brandlogo partner mini")}${t({ lt: `„${q.lender.name}“ · ${q.years} ${YEARS(q.years)} · ${NUM(q.lender.rate * 100, 1)} %`, en: `${q.lender.name} · ${q.years} years · ${NUM(q.lender.rate * 100, 1)}%` })}</em></div>
           <div class="v mono">${EUR(q.loan, 2)}</div></div>
         <div class="brk"><div class="l">${t({ lt: "Iš viso grąžinsite", en: "Total repayable" })}
           <em>${t({ lt: `iš jų palūkanų ${EUR(q.interestPaid)}`, en: `of which ${EUR(q.interestPaid)} interest` })}</em></div>
@@ -804,21 +852,24 @@ const SCREENS = [
     const yourPct = Math.round(FLEX.share * 100);
 
     const order = [
-      [t({ lt: "Įranga ir montavimas", en: "Equipment and installation" }), `${c.name} · ${t(c.brands)}`, EUR(c.price)],
+      [t({ lt: "Įranga ir montavimas", en: "Equipment and installation" }),
+        `<span class="partyline">${contractorLogo(c, "brandlogo contractor mini")}${c.name} · ${t(c.brands)}</span>`, EUR(c.price)],
       [t({ lt: "Sistema", en: "System" }), `${NUM(c.pv)} kW · ${NUM(c.inverter, 0)} kW · ${NUM(c.battery, 0)} kWh`, "—"],
-      [t({ lt: "Finansavimas", en: "Financing" }), `${q.lender.name} · ${q.years} ${YEARS(q.years)} · ${NUM(q.lender.rate * 100, 1)} %`, `${EUR(q.loan, 2)}/${t({ lt: "mėn.", en: "mo" })}`],
+      [t({ lt: "Finansavimas", en: "Financing" }),
+        `<span class="partyline">${lenderLogo(q.lender, "brandlogo partner mini")}${q.lender.name} · ${q.years} ${YEARS(q.years)} · ${NUM(q.lender.rate * 100, 1)} %</span>`,
+        `${EUR(q.loan, 2)}/${t({ lt: "mėn.", en: "mo" })}`],
       [t({ lt: "Vidutinė lankstumo vertė", en: "Average flexibility value" }), t({ lt: `Ignitis · pajamos dalijamos ${yourPct}/${100 - yourPct}`, en: `Ignitis · revenue split ${yourPct}/${100 - yourPct}` }), `−${EUR(c.flexAvg)}/${t({ lt: "mėn.", en: "mo" })}`],
     ].map(([k, s, v]) => `
       <div class="brk"><div class="l">${k}<em>${s}</em></div><div class="v mono">${v}</div></div>`).join("");
 
     const roles = [
-      ["hardhat", c.name, t({ lt: "Pateikia ir įrengia įrangą", en: "Supplies and installs the equipment" }),
+      ["hardhat", `<span class="partyline">${contractorLogo(c, "brandlogo contractor mini")}${c.name}</span>`, t({ lt: "Pateikia ir įrengia įrangą", en: "Supplies and installs the equipment" }),
         t({ lt: `Saulės elektrinė, inverteris ir kaupiklis, montavimas, priėmimas ir servisas. Garantijos: kaupiklis ${c.warrantyBattery} m., montavimas ${c.warrantyInstall} m.`,
             en: `The array, inverter and battery, the installation, the sign-off and the service. Warranties: battery ${c.warrantyBattery} years, installation ${c.warrantyInstall} years.` })],
-      ["card", q.lender.name, t({ lt: "Finansuoja Jus", en: "Finances you" }),
+      ["card", `<span class="partyline">${lenderLogo(q.lender, "brandlogo partner mini")}${q.lender.name}</span>`, t({ lt: "Finansuoja Jus", en: "Finances you" }),
         t({ lt: `Apmoka rangovui visą ${EUR(c.price)} sumą po montavimo priėmimo. Jūs grąžinate ${q.years} ${YEARS(q.years)} po ${EUR(q.loan, 2)}.`,
             en: `Pays the contractor the full ${EUR(c.price)} once the installation is signed off. You repay ${EUR(q.loan, 2)} a month over ${q.years} years.` })],
-      ["bolt", "Ignitis", t({ lt: "Tiekia elektrą ir sukuria lankstumo vertę", en: "Supplies the electricity and creates the flexibility value" }),
+      ["bolt", `<span class="partyline"><img class="brandlogo ignitis mini" src="assets/ignitis-mark.png" alt="Ignitis">Ignitis</span>`, t({ lt: "Tiekia elektrą ir sukuria lankstumo vertę", en: "Supplies the electricity and creates the flexibility value" }),
         t({ lt: `Elektros tiekimas, kaupiklio valdymas ir rinkos pajamos, dalijamos ${yourPct}/${100 - yourPct}. Įrangos maržos negauname ir paskolos neišduodame.`,
             en: `Electricity supply, battery control, and the market revenue split ${yourPct}/${100 - yourPct}. We take no hardware margin and issue no loan.` })],
     ].map(([ic, who, b, p]) => `
@@ -828,13 +879,16 @@ const SCREENS = [
       </div>`).join("");
 
     const agreements = [
-      [t({ lt: "Įrangos ir montavimo sutartis", en: "Equipment and installation contract" }), c.name,
+      [t({ lt: "Įrangos ir montavimo sutartis", en: "Equipment and installation contract" }),
+       `<span class="partyline">${contractorLogo(c, "brandlogo contractor mini")}${c.name}</span>`,
        t({ lt: `Įranga, montavimas, priėmimas ir servisas. Garantijos: kaupiklis ${c.warrantyBattery} m., montavimas ${c.warrantyInstall} m.`,
            en: `Equipment, installation, sign-off and service. Warranties: battery ${c.warrantyBattery} years, installation ${c.warrantyInstall} years.` })],
-      [t({ lt: "Vartojimo kredito sutartis", en: "Consumer credit agreement" }), q.lender.name,
+      [t({ lt: "Vartojimo kredito sutartis", en: "Consumer credit agreement" }),
+       `<span class="partyline">${lenderLogo(q.lender, "brandlogo partner mini")}${q.lender.name}</span>`,
        t({ lt: `${EUR(c.price)}, ${q.years} ${YEARS(q.years)}, ${NUM(q.lender.rate * 100, 1)} % metinės palūkanos, pradinis įnašas ${EUR(0)}. Atsisakymo teisė — 14 dienų.`,
            en: `${EUR(c.price)} over ${q.years} years at ${NUM(q.lender.rate * 100, 1)}%, ${EUR(0)} upfront. Fourteen-day right of withdrawal.` })],
-      [t({ lt: "Lankstumo ir elektros tiekimo sutartis", en: "Flexibility and supply agreement" }), "Ignitis",
+      [t({ lt: "Lankstumo ir elektros tiekimo sutartis", en: "Flexibility and supply agreement" }),
+       `<span class="partyline"><img class="brandlogo ignitis mini" src="assets/ignitis-mark.png" alt="Ignitis">Ignitis</span>`,
        t({ lt: `Kaupiklio valdymas, rinkos pajamos dalijamos ${yourPct}/${100 - yourPct} (vidutiniškai apie ${EUR(c.flexAvg)}/mėn. Jums), ${FLEX.reserveKwh} kWh rezervas Jums.`,
            en: `Battery control, market revenue split ${yourPct}/${100 - yourPct} (around ${EUR(c.flexAvg)}/month to you on average), and a ${FLEX.reserveKwh} kWh reserve kept for you.` })],
     ].map(([b, who, s]) => `
@@ -941,15 +995,19 @@ const SCREENS = [
 
     return `
       <div class="eyebrow">${t({ lt: "Užsakyta", en: "Ordered" })}</div>
-      <h1>${t({ lt: "Kas bus toliau", en: "What happens next" })}</h1>
-      <p class="lede">${t({
+      <div class="selectedbrand">
+        ${contractorLogo(c, "brandlogo contractor hero")}
+        <h1>${t({ lt: "Kas bus toliau", en: "What happens next" })}</h1>
+      </div>
+      <p class="lede partyline">${contractorLogo(c, "brandlogo contractor mini")}${lenderLogo(q.lender, "brandlogo partner mini")}${t({
         lt: `${c.name} · ${NUM(c.pv)} kW ir ${NUM(c.battery, 0)} kWh · „${q.lender.name}“, ${q.years} ${YEARS(q.years)} · ${EUR(q.monthly)} per mėnesį.`,
         en: `${c.name} · ${NUM(c.pv)} kW and ${NUM(c.battery, 0)} kWh · ${q.lender.name}, ${q.years} years · ${EUR(q.monthly)} a month.` })}</p>
 
       <div class="card stack"><ul class="timeline">${steps}</ul></div>
 
       <div class="card">
-        <h3 style="display:flex;align-items:center;gap:9px"><span style="color:var(--blue)">${icon("hardhat")}</span>
+        <h3 style="display:flex;align-items:center;gap:9px">
+          ${contractorLogo(c, "brandlogo contractor inline")}
           ${t({ lt: "Jūsų kontaktas yra rangovas, ne skambučių centras", en: "Your contact is the contractor, not a call centre" })}</h3>
         <p style="font-size:13.5px;color:var(--navy-70);margin-top:8px">${t({
           lt: `Mindaugas, „${c.name}“ montavimo vadovas. Jo numeris bus programėlėje nuo rytojaus. ${t(c.response)} pagal sutartį — jei nesilaikoma, kreipiatės į platformą ir terminą sekame mes.`,
@@ -1027,7 +1085,7 @@ const SCREENS = [
             <span class="mono">${EUR(energy, 2)}</span></div>
           <div class="billrow"><span>${t({ lt: "Tinklo mokesčiai", en: "Network charges" })}</span>
             <span class="mono">${EUR(network, 2)}</span></div>
-          <div class="billrow"><span>${t({ lt: `Paskolos įmoka — „${q.lender.name}“, ${q.years} m.`, en: `Loan instalment — ${q.lender.name}, ${q.years} yr` })}</span>
+          <div class="billrow"><span class="partyline">${lenderLogo(q.lender, "brandlogo partner mini")}${t({ lt: `Paskolos įmoka — „${q.lender.name}“, ${q.years} m.`, en: `Loan instalment — ${q.lender.name}, ${q.years} yr` })}</span>
             <span class="mono">${EUR(q.loan, 2)}</span></div>
           <div class="billrow credit"><span>${t({ lt: "Į tinklą atiduota saulės energija", en: "Solar exported to the grid" })}</span>
             <span class="mono">−${EUR(c.exportIncome, 2)}</span></div>
@@ -1107,7 +1165,7 @@ function reset() {
   state.i = 0;
   state.approach = null;
   state.contractor = null;
-  state.lender = "ft";
+  state.lender = "seb";
   state.dispatch = null;
   state.formFilled = false;
   state.log = [];

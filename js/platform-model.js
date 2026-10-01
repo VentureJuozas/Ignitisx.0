@@ -86,8 +86,9 @@ const LOAN_YEARS = 10;
 
 const LENDERS = [
   {
-    id: "ft",
-    name: "Finansų Tiltas",
+    id: "seb",
+    name: "SEB",
+    logo: "assets/partners/seb.png",
     rate: 0.05,
     note: {
       lt: "Mažiausia metinė norma platformoje. Sprendimas per 2 darbo dienas.",
@@ -95,8 +96,9 @@ const LENDERS = [
     },
   },
   {
-    id: "nk",
-    name: "Nordkreditas",
+    id: "luminor",
+    name: "Luminor",
+    logo: "assets/partners/luminor.png",
     rate: 0.054,
     note: {
       lt: "Priima paraiškas ir su esamais įsipareigojimais, bet norma didesnė.",
@@ -104,8 +106,9 @@ const LENDERS = [
     },
   },
   {
-    id: "bk",
-    name: "Baltijos Kreditas",
+    id: "swedbank",
+    name: "Swedbank",
+    logo: "assets/partners/swedbank.png",
     rate: 0.059,
     note: {
       lt: "Greičiausias sprendimas — tą pačią dieną, bet už tai sumokate norma.",
@@ -125,6 +128,7 @@ const CONTRACTORS = [
   {
     id: "sg",
     name: "Saulės Grąža",
+    logo: "assets/contractors/saules-graza.png",
     since: 2016,
     installs: 1840,
     rating: 4.6,
@@ -149,6 +153,7 @@ const CONTRACTORS = [
   {
     id: "ev",
     name: "Energijos Vartai",
+    logo: "assets/contractors/energijos-vartai.png",
     since: 2019,
     installs: 610,
     rating: 4.3,
@@ -173,6 +178,7 @@ const CONTRACTORS = [
   {
     id: "bs",
     name: "Baltijos Saulė",
+    logo: "assets/contractors/baltijos-saule.png",
     since: 2013,
     installs: 3270,
     rating: 4.8,
@@ -197,6 +203,7 @@ const CONTRACTORS = [
   {
     id: "zj",
     name: "Žalia Jėga",
+    logo: "assets/contractors/zalia-jega.png",
     since: 2021,
     installs: 240,
     rating: 4.1,
