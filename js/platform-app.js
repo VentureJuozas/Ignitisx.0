@@ -4,7 +4,8 @@
 
 const state = {
   i: 0,
-  approach: null,      // null until he picks; only "financed" is offered
+  scenario: "full",   // "full" | "addon" — chosen on the profile screen
+  approach: null,      // null until he picks; "financed" | "upfront"
   contractor: null,
   lender: "seb",
   dispatch: null,      // null until he answers, then "yes" or "no"
@@ -50,14 +51,42 @@ const icon = (name, cls = "ico") =>
 
 /* ---------- shared pieces ---------- */
 
-/* What is actually in the box, visible without reading. Only the two things the
-   contractor supplies — the full specification sits in the specs list below. */
+/* Hardware strip: 7.3 kW PV · 11.52 kWh battery · 10 kW inverter.
+   In the add-on scenario PV and inverter are already on the roof. */
+function hwLabel(c) {
+  return t({
+    lt: `${NUM(c.pv)} kW PV · ${NUM(c.battery, 2)} kWh kaupiklis · ${NUM(c.inverter, 0)} kW inverteris`,
+    en: `${NUM(c.pv)} kW PV · ${NUM(c.battery, 2)} kWh battery · ${NUM(c.inverter, 0)} kW inverter`,
+  });
+}
+
 function kitStrip(c) {
+  const addon = SCENARIO.id === "addon";
   const items = [
-    { icon: "solar", short: t({ lt: "Saulės elektrinė", en: "Solar array" }), cap: `${NUM(c.pv)} kW`, state: "in" },
-    { icon: "bess", short: t({ lt: "Kaupiklis", en: "Battery" }), cap: `${NUM(c.battery)} kWh`, state: "in" },
+    {
+      icon: "solar",
+      short: t({ lt: "Saulės elektrinė", en: "Solar array" }),
+      cap: addon
+        ? t({ lt: `${NUM(c.pv)} kW · jau yra`, en: `${NUM(c.pv)} kW · already in` })
+        : `${NUM(c.pv)} kW PV`,
+      state: addon ? "owned" : "in",
+    },
+    {
+      icon: "bess",
+      short: t({ lt: "Kaupiklis", en: "Battery" }),
+      cap: `${NUM(c.battery, 2)} kWh`,
+      state: "in",
+    },
+    {
+      icon: "bolt",
+      short: t({ lt: "Inverteris", en: "Inverter" }),
+      cap: addon
+        ? t({ lt: `${NUM(c.inverter, 0)} kW · jau yra`, en: `${NUM(c.inverter, 0)} kW · already in` })
+        : `${NUM(c.inverter, 0)} kW`,
+      state: addon ? "owned" : "in",
+    },
   ];
-  return `<div class="kit kit-pair">` + items.map((k) => `
+  return `<div class="kit kit-triple">` + items.map((k) => `
     <div class="kititem ${k.state}">
       <div class="tile">${icon(k.icon, "ico big")}</div>
       <b>${k.short}</b><em>${k.cap}</em>
@@ -87,41 +116,69 @@ const contractorStrip = (cls = "contractorstrip") =>
   CONTRACTORS.map((c) => brandLogo(c.logo, c.name, "brandlogo contractor strip")).join("") +
   `</div>`;
 
+function activeQuote() {
+  if (!state.contractor) return bestQuote(state.lender);
+  return state.approach === "upfront"
+    ? upfrontQuote(state.contractor)
+    : quote(state.contractor, state.lender);
+}
+
+/* Skip lender / credit screens when the customer pays outright. */
+function nextIndex(i) {
+  if (state.approach === "upfront") {
+    if (i === 2) return 4;  // offers -> flexibility
+    if (i === 4) return 8;  // flexibility -> checkout
+  }
+  return i + 1;
+}
+function prevIndex(i) {
+  if (state.approach === "upfront") {
+    if (i === 4) return 2;
+    if (i === 8) return 4;
+  }
+  return i - 1;
+}
+
+
 /* Where the monthly figure comes from. Four lines, a total, and then the
    comparison that actually matters: the current bill and the difference. */
 function breakdown(q) {
   const c = q.contractor;
+  const financed = Boolean(q.lender);
   const rows = [
-    [t({ lt: "Elektra ir tinklo mokesčiai", en: "Electricity and network charges" }),
-     t({ lt: "Po saulės elektrinės ir kaupiklio įrengimo", en: "After the array and battery are in" }),
+    [t({ lt: "Elektra su PV + kaupikliu", en: "Electricity with PV + battery" }),
+     t({
+       lt: `Įsigyjama elektra ~${EUR(c.purchasedElectricity)}/mėn.; eksportas ${EUR(c.exportAnnual)}/metus; lankstumas ${EUR(c.flexAnnual)}/metus — jau įskaičiuota`,
+       en: `Purchased power ~${EUR(c.purchasedElectricity)}/mo; export ${EUR(c.exportAnnual)}/yr; flexibility ${EUR(c.flexAnnual)}/yr — already netted in` }),
      c.billAfter, false],
-    [t({ lt: `Paskolos įmoka · ${q.lender.name}`, en: `Loan instalment · ${q.lender.name}` }),
-     t({ lt: `${q.years} ${YEARS(q.years)}, ${NUM(q.lender.rate * 100, 1)} % metinės palūkanos, 0 € pradinis įnašas`,
-        en: `${q.years} years at ${NUM(q.lender.rate * 100, 1)}%, zero upfront` }),
-     q.loan, false],
-    [t({ lt: "Pajamos už atiduotą elektrą", en: "Income from exported electricity" }),
-     t({ lt: "Tai, ko namai nesuvartoja ir kaupiklis nesukaupia", en: "What the house and battery cannot absorb" }),
-     -c.exportIncome, true],
-    [t({ lt: "Vidutinė lankstumo vertė", en: "Average flexibility value" }),
-     t({ lt: `Jūsų pusė to, ką kaupiklis uždirba rinkoje. Dalijamės ${Math.round(FLEX.share * 100)}/${Math.round((1 - FLEX.share) * 100)}, todėl kiekvieną mėnesį suma skiriasi`,
-        en: `Your half of what the battery earns in the market. We split it ${Math.round(FLEX.share * 100)}/${Math.round((1 - FLEX.share) * 100)}, so it differs month to month` }),
-     -c.flexAvg, true],
   ];
+  if (financed) {
+    rows.push([t({ lt: `Paskolos įmoka · ${q.lender.name}`, en: `Loan instalment · ${q.lender.name}` }),
+      t({ lt: `${q.years} ${YEARS(q.years)}, ${NUM(q.lender.rate * 100, 1)} % metinės palūkanos, 0 € pradinis įnašas`,
+         en: `${q.years} years at ${NUM(q.lender.rate * 100, 1)}%, zero upfront` }),
+      q.loan, false]);
+  }
+
+  const todayEm = SCENARIO.id === "addon"
+    ? t({ lt: "Su esama saulės elektrine, be kaupiklio", en: "With the existing array, without a battery" })
+    : t({ lt: "Be saulės elektrinės, be kaupiklio", en: "No array, no battery" });
 
   return `<div class="card stack">
     <h3>${t({ lt: "Iš ko susideda mėnesio suma", en: "What the monthly figure is made of" })}</h3>
     <p style="font-size:13px;color:var(--navy-45);margin:6px 0 14px">
-      ${c.name} · ${q.lender.name} · ${q.years} ${t({ lt: "metų terminas", en: "year term" })}.
+      ${c.name}${financed ? ` · ${q.lender.name} · ${q.years} ${t({ lt: "metų terminas", en: "year term" })}` : ` · ${t({ lt: "pirkimas iš karto", en: "bought outright" })}`}.
       ${t({ lt: "Perskaičiuojama iškart.", en: "Recalculated live." })}
     </p>
     ${rows.map(([l, basis, v, credit]) => `
       <div class="brk"><div class="l">${l}<em>${basis}</em></div>
       <div class="v mono" ${credit ? 'style="color:var(--ok)"' : ""}>${v < 0 ? "−" : ""}${EUR(Math.abs(v), 2)}</div></div>`).join("")}
     <div class="brk total"><div class="l">${t({ lt: "Iš viso per mėnesį", en: "Total per month" })}
-      <em>${t({ lt: "Vidutiniškai — lankstumo vertė kinta", en: "On average — the flexibility value varies" })}</em></div>
+      <em>${financed
+        ? t({ lt: "Kol mokama paskola — vėliau lieka tik elektra", en: "While the loan runs — afterwards only electricity remains" })
+        : t({ lt: "Be paskolos — tik elektra su sistema", en: "No loan — electricity with the system only" })}</em></div>
       <div class="v mono">${EUR(q.monthly, 2)}</div></div>
     <div class="brk"><div class="l">${t({ lt: "Dabartinė elektros sąskaita", en: "Your electricity bill today" })}
-      <em>${t({ lt: "Be saulės elektrinės, be kaupiklio, be lankstumo pajamų", en: "No array, no battery, no flexibility income" })}</em></div>
+      <em>${todayEm}</em></div>
       <div class="v mono">${EUR(PERSONA.currentMonthlyCost, 2)}</div></div>
     <div class="diffline ${q.monthlySaving >= 0 ? "" : "neg"}">
       <div>
@@ -133,12 +190,15 @@ function breakdown(q) {
       </div>
       <b class="mono">${q.monthlySaving >= 0 ? "" : "−"}${EUR(Math.abs(q.monthlySaving), 2)}</b>
     </div>
-    <p style="font-size:12px;color:var(--navy-45);margin-top:14px">
+    ${!financed ? `<div class="honestpanel" style="margin-top:14px">
+      <b>${t({ lt: `Po atsipirkimo — apie ${EUR(PAYBACK.afterPaybackSaving)}/mėn.`, en: `After payback — about ${EUR(PAYBACK.afterPaybackSaving)}/mo` })}</b>
       ${t({
-        lt: "Visi skaičiai ilustratyvūs. Lankstumo vertė yra vidutinė, o ne garantuota — BBCM galios kainos nėra skelbiamos, todėl dalijamės realiomis pajamomis, o ne pažadu.",
-        en: "All figures illustrative. The flexibility value is an average, not a guarantee — BBCM capacity prices are not published, so we share the real revenue rather than a promise.",
-      })}
-    </p>
+        lt: `Atsiperkamumas ${NUM(PAYBACK.yearsNoSubsidy, 1)} m. be paramos, ${NUM(PAYBACK.yearsWithSubsidy30, 1)} m. su 30 % valstybės parama. Po to paskolos įmokos nebelieka — taupymas lygus elektros sutaupymui.`,
+        en: `Payback in ${NUM(PAYBACK.yearsNoSubsidy, 1)} yr with no subsidy, ${NUM(PAYBACK.yearsWithSubsidy30, 1)} yr with a 30% state subsidy. After that there is no instalment — the saving equals the electricity saving.` })}
+    </div>` : `<p style="font-size:12px;color:var(--navy-45);margin-top:14px">${t({
+      lt: `Po paskolos laikotarpio įmokos nebelieka — tada mėnesio taupymas pakyla iki ~${EUR(PAYBACK.afterPaybackSaving)} (kaip pirkimo iš karto atveju).`,
+      en: `When the loan ends the instalment drops away — monthly saving then rises to ~${EUR(PAYBACK.afterPaybackSaving)} (same as buying outright after payback).`,
+    })}</p>`}
   </div>`;
 }
 
@@ -146,34 +206,51 @@ function breakdown(q) {
 
 const SCREENS = [
 
-{ /* 0 — persona */
+{ /* 0 — persona + scenario toggle */
   id: "profilis",
   label: { lt: "Profilis", en: "Profile" },
   next: { lt: "Pradėti demonstraciją", en: "Start the demo" },
   role: { lt: "Sesijos kontekstas", en: "Session context" },
-  foot: { lt: "Perskaitykite namų ūkį prieš pradedant. Visi tolesni skaičiai išvedami iš jo.",
-          en: "Read the household out before starting. Every later number derives from it." },
-  agent: [{ lt: "Prieš demonstraciją — namų ūkis, kuriam viskas sukurta. Visi tolesni ekranai rodomi lygiai taip, kaip juos matytų klientas. Šis ekranas — vienintelis, kurio klientas niekada nemato.",
-            en: "Before the demo, meet the household it is built around. Everything after this is shown exactly as the customer would see it. This screen is the only one he never sees." }],
+  foot: { lt: "Pasirinkite scenarijų, tada perskaitykite namų ūkį. Visi tolesni skaičiai išvedami iš jo.",
+          en: "Pick the scenario, then read the household. Every later number derives from it." },
+  agent: [{ lt: "Prieš demonstraciją — pasirinkite, ar rodome visą sistemą, ar tik kaupiklio prieaugį prie esamos saulės elektrinės. Tada — namų ūkis, kuriam viskas sukurta.",
+            en: "Before the demo, choose whether we show a full system or a battery add-on beside an existing array. Then meet the household it is built around." }],
   asks: [
+    [{ lt: "Kuo skiriasi du scenarijai?", en: "How do the two scenarios differ?" },
+     { lt: "Visa sistema — 7,3 kW PV, 10 kW inverteris ir 11,52 kWh kaupiklis už 7 995 €. Prieaugis — tik kaupiklis už 3 565 € namų ūkiui, kuris jau turi elektrinę ir vartoja 7 000 kWh/metus.",
+       en: "Full system — 7.3 kW PV, 10 kW inverter and 11.52 kWh battery at €7,995. Add-on — battery only at €3,565 for a household that already has an array and uses 7,000 kWh/yr." }],
     [{ lt: "Kodėl būtent šis namų ūkis?", en: "Why this household?" },
-     { lt: "Nes vartojimas jau didelis ir jau valdomas: šilumos siurblys ir elektromobilis kartu sudaro didžiąją sąskaitos dalį, o abu veikia vakare. Tokiam namų ūkiui kaupiklis duoda daugiausiai, o saulės elektrinės jis dar neturi.",
-       en: "Because consumption is already high and already controllable: the heat pump and the EV together make up most of the bill, and both run in the evening. A battery does the most for a household like this, and he has no array yet." }],
-    [{ lt: "Kiek tokių namų ūkių?", en: "How many households look like this?" },
-     { lt: "Šilumos siurblys plius elektromobilis plius jokios saulės elektrinės — tai didelė ir iš DataHub duomenų atpažįstama dalis. Būtent šie namų ūkiai turi didžiausią vartojimą ir mažiausiai laisvo kapitalo.",
-       en: "A heat pump plus an EV plus no solar is a large slice, and one we can identify from DataHub without asking anyone a question. These households have the highest consumption and the least spare capital." }],
-    [{ lt: "Kodėl svarbu, kad jis neturi saulės elektrinės?", en: "Why does it matter that he has no solar?" },
-     { lt: "Nes tada rangovas parduoda visą komplektą, o ne papildymą. Ignitis gauna kaupiklį į portfelį, klientas gauna visą sprendimą, o finansavimo partneris — vieną sutartį, o ne dvi.",
-       en: "Because the contractor then sells a whole system rather than an add-on. Ignitis gets a battery into the portfolio, the customer gets a complete solution, and the lender writes one agreement instead of two." }],
+     { lt: "Nes vartojimas jau didelis ir vakarinis: šilumos siurblys ir elektromobilis. Tokiam namų ūkiui kaupiklis duoda daugiausiai.",
+       en: "Because consumption is already high and evening-heavy: heat pump and EV. A battery does the most for a household like this." }],
+    [{ lt: "Ar galiu keisti scenarijų vėliau?", en: "Can I change scenario later?" },
+     { lt: "Geriau grįžti į šį ekraną arba spausti „Pradėti iš naujo“. Scenarijus perrašo kainas, sąskaitą ir rangovų pasiūlymus.",
+       en: "Come back to this screen or hit Restart. The scenario rewrites prices, the bill and the contractor quotes." }],
   ],
+  can: () => Boolean(state.scenario),
   render: () => {
+    const scenarioCards = Object.values(SCENARIOS).map((sc) => `
+      <button class="acard ${state.scenario === sc.id ? "sel" : ""}" data-scenario="${sc.id}">
+        <h3>${t(sc.label)}</h3>
+        <p>${t(sc.blurb)}</p>
+        <div class="afig" style="margin-top:12px">
+          <div><span class="k">${t({ lt: "Bazinė kaina", en: "Baseline price" })}</span>
+            <span class="v mono">${EUR(sc.contractors[0].price)}</span></div>
+          <div><span class="k">${t({ lt: "Sąskaita šiandien", en: "Bill today" })}</span>
+            <span class="v mono">${EUR(sc.persona.currentMonthlyCost)}<small>/${t({ lt: "mėn.", en: "mo" })}</small></span></div>
+        </div>
+      </button>`).join("");
+
     const facts = [
-      ["chart", t({ lt: "10 000 kWh/metus", en: "10,000 kWh/yr" }),
+      ["chart", t({ lt: `${PERSONA.consumption.toLocaleString(LANG.current === "lt" ? "lt-LT" : "en-IE")} kWh/metus`,
+                    en: `${PERSONA.consumption.toLocaleString("en-IE")} kWh/yr` }),
         t({ lt: "Visas namų ūkio vartojimas", en: "Total household consumption" })],
       ["card", t({ lt: `~${EUR(PERSONA.currentMonthlyCost)}/mėn.`, en: `~${EUR(PERSONA.currentMonthlyCost)}/mo` }),
         t({ lt: "Vidutinė elektros sąskaita", en: "Average electricity bill" })],
-      ["heat", t({ lt: "Šilumos siurblys oras–vanduo", en: "Air-to-water heat pump" }),
-        t({ lt: `Įrengtas ${PERSONA.heatPumpYear} m. — didžiausia vartojimo dalis`, en: `Installed ${PERSONA.heatPumpYear} — the largest single load` })],
+      PERSONA.hasSolar
+        ? ["solar", t({ lt: "Saulės elektrinė jau yra", en: "Solar array already in" }),
+           t({ lt: `${NUM(SIZING.pv)} kW · ${NUM(SIZING.inverter, 0)} kW inverteris`, en: `${NUM(SIZING.pv)} kW · ${NUM(SIZING.inverter, 0)} kW inverter` })]
+        : ["heat", t({ lt: "Šilumos siurblys oras–vanduo", en: "Air-to-water heat pump" }),
+           t({ lt: `Įrengtas ${PERSONA.heatPumpYear} m. — didžiausia vartojimo dalis`, en: `Installed ${PERSONA.heatPumpYear} — the largest single load` })],
       ["ev", t({ lt: "Elektromobilis", en: "Electric vehicle" }),
         t({ lt: `Nuo ${PERSONA.evYear} m., kraunamas namuose vakarais`, en: `Since ${PERSONA.evYear}, charged at home in the evening` })],
     ].map(([ic, b, s]) => `
@@ -184,11 +261,14 @@ const SCREENS = [
 
     return `
       <div class="eyebrow">${t({ lt: "Prieš pradedant", en: "Before we begin" })}</div>
-      <h1>${t({ lt: "Namų ūkis, kuriam tai sukurta", en: "The household this is built for" })}</h1>
+      <h1>${t({ lt: "Pasirinkite demonstracijos scenarijų", en: "Choose the demo scenario" })}</h1>
       <p class="lede">${t({
-        lt: "Vienas personažas, nuosekliai pernešamas per kiekvieną ekraną ir kiekvieną skaičių.",
-        en: "One persona, carried consistently through every screen and every number." })}</p>
-      <div class="card stack">
+        lt: "Du keliai per tą pačią platformą. Skiriasi įranga, kaina ir namų ūkio sąskaita.",
+        en: "Two paths through the same platform. Hardware, price and the household bill differ." })}</p>
+
+      <div class="approach stack">${scenarioCards}</div>
+
+      <div class="card stack" style="margin-top:22px">
         <div class="pcard">
           <div class="pavatar"><img src="assets/ignitis-mark.png" alt=""></div>
           <div>
@@ -197,6 +277,12 @@ const SCREENS = [
           </div>
         </div>
         <div class="factgrid factgrid-4">${facts}</div>
+        <div class="honestpanel" style="margin-top:8px">
+          <b>${t(SCENARIO.label)}</b>
+          ${t({
+            lt: `Komplektas: ${NUM(SIZING.pv)} kW PV · ${NUM(SIZING.inverter, 0)} kW inverteris · ${NUM(SIZING.battery)} kWh kaupiklis. Atsiperkamumas perkant iš karto: ${NUM(PAYBACK.yearsNoSubsidy, 1)} m. be paramos, ${NUM(PAYBACK.yearsWithSubsidy30, 1)} m. su 30 % parama.`,
+            en: `Bundle: ${NUM(SIZING.pv)} kW PV · ${NUM(SIZING.inverter, 0)} kW inverter · ${NUM(SIZING.battery)} kWh battery. Payback if bought outright: ${NUM(PAYBACK.yearsNoSubsidy, 1)} yr with no subsidy, ${NUM(PAYBACK.yearsWithSubsidy30, 1)} yr with 30% subsidy.` })}
+        </div>
       </div>`;
   },
 },
@@ -287,15 +373,15 @@ const SCREENS = [
   foot: { lt: "Pirmiausia pasirenkamas būdas, tik tada rangovas. Kiekvienas rangovas siūlo savo įrangą.",
           en: "The route comes first, the contractor second. Each contractor quotes its own hardware." },
   agent: [
-    { lt: "Pirmiausia pasirinkite, kaip norite įsigyti. Platformoje šiandien veikia tik vienas būdas — be pradinio įnašo; antrąjį rodau tik tam, kad matytumėte, kiek kainuoja patogumas.",
-      en: "First choose how you want to buy. Only one route is live on the platform today — the one with nothing upfront; I show the second only so you can see what the convenience costs." },
-    { lt: "Pasirinkus būdą, parodysiu keturių rangovų pasiūlymus. Įranga visų skirtinga, todėl lyginti galiu tik tuo, kas Jums tikrai svarbu: mėnesio suma ir metinė nauda.",
-      en: "Once you pick a route I will show the four contractor quotes. The hardware differs in every case, so I can only compare them on what matters to you: the monthly figure and the annual benefit." },
+    { lt: "Pirmiausia pasirinkite, kaip norite įsigyti — su paskola arba iš karto. Abu būdai veikia.",
+      en: "First choose how you want to buy — financed or outright. Both routes are live." },
+    { lt: "Pasirinkus būdą, parodysiu keturių rangovų pasiūlymus. Pirmasis cituoja bazinį atvejį; kiti brangesni.",
+      en: "Once you pick a route I will show the four contractor quotes. The first quotes the baseline case; the others are dearer." },
   ],
   asks: [
-    [{ lt: "Kodėl visos kainos neprieinamos?", en: "Why is the second route unavailable?" },
-     { lt: "Nes platforma kuriama būtent tiems, kurie neturi 9–11 tūkst. eurų laisvų pinigų. Įrangą nupirkti savo lėšomis galite ir dabar — tik ne per mus, ir be vienos sąskaitos bei vienos garantijos.",
-       en: "Because the platform exists for the households that do not have nine to eleven thousand euros spare. You can buy the equipment outright today — just not through us, and without the single invoice and single warranty." }],
+    [{ lt: "Kuo skiriasi pirkimas iš karto?", en: "How does buying outright differ?" },
+     { lt: "Sumokate visą kainą šiandien, paskolos įmokos nėra, todėl mėnesio taupymas didesnis. Po atsipirkimo taupymas lieka toks pats kaip finansuojant — tik be įmokos.",
+       en: "You pay the full price today, there is no instalment, so the monthly saving is larger. After payback the saving matches the financed route — just without the loan." }],
     [{ lt: "Kodėl pigiausia įranga nėra geriausias pasirinkimas?", en: "Why isn't the cheapest hardware the best deal?" },
      { lt: "Nes mėnesio sumą sudaro keturios dalys, o ne viena. Mažesnis kaupiklis reiškia mažesnę vidutinę lankstumo vertę ir didesnę elektros sąskaitą, todėl mažesnė paskolos įmoka to nekompensuoja.",
        en: "Because the monthly figure has four parts, not one. A smaller battery means a lower average flexibility value and a larger electricity bill, so the lower instalment does not make up the difference." }],
@@ -303,7 +389,7 @@ const SCREENS = [
      { lt: "Įrangos garantija lieka gamintojo, o montavimo garantiją perimame mes ir perduodame kitam platformos rangovui. Tai vienintelė vieta, kur Ignitis prisiima riziką be maržos.",
        en: "The equipment warranty stays with the manufacturer, and we take over the installation warranty and reassign it to another contractor on the platform. It is the one place where Ignitis carries risk without margin." }],
   ],
-  can: () => state.approach === "financed" && Boolean(state.contractor),
+  can: () => Boolean(state.approach) && Boolean(state.contractor),
   render: () => {
     const ranked = rankedQuotes(state.lender);
     const cheapestMonthly = ranked[0].contractor.id;
@@ -320,7 +406,7 @@ const SCREENS = [
       const specs = [
         [t({ lt: "Saulės elektrinė", en: "Solar array" }), `${NUM(c.pv)} kW`],
         [t({ lt: "Inverteris", en: "Inverter" }), `${NUM(c.inverter, 0)} kW`],
-        [t({ lt: "Kaupiklis", en: "Battery" }), `${NUM(c.battery, 0)} kWh`],
+        [t({ lt: "Kaupiklis", en: "Battery" }), `${NUM(c.battery, 2)} kWh`],
         [t({ lt: "Įranga", en: "Equipment" }), t(c.brands)],
         [t({ lt: "Įrangos kaina", en: "Equipment price" }), EUR(c.price)],
         [t({ lt: "Laukimo laikas", en: "Lead time" }), t({ lt: `${c.leadWeeks} sav.`, en: `${c.leadWeeks} weeks` })],
@@ -360,10 +446,12 @@ const SCREENS = [
 
     const bestFin = ranked[0];
     const bestUp = bestUpfrontQuote();
-    const chosen = state.approach === "financed";
+    const chosenFin = state.approach === "financed";
+    const chosenUp = state.approach === "upfront";
+    const chosen = chosenFin || chosenUp;
 
     const approach = `<div class="approach">
-      <button class="acard ${chosen ? "sel" : ""}" data-approach="financed">
+      <button class="acard ${chosenFin ? "sel" : ""}" data-approach="financed">
         <span class="badge">${t({ lt: "Galima rinktis", en: "Available" })}</span>
         <h3>${t({ lt: "Nemokate nieko šiandien", en: "Pay nothing upfront" })}</h3>
         <div class="afig">
@@ -372,11 +460,11 @@ const SCREENS = [
             <span class="v mono good">${EUR(bestFin.monthlySaving)}<small>/${t({ lt: "mėn.", en: "mo" })}</small></span></div>
         </div>
         <p>${t({
-          lt: `Įrangą apmoka finansavimo partneris, Jūs mokate ${LOAN_YEARS} ${YEARS(LOAN_YEARS)} įmoką, o ji jau įskaičiuota į mėnesio sumą. Įranga nuo pirmos dienos Jūsų.`,
-          en: `A financing partner pays for the equipment and you repay over ${LOAN_YEARS} years, with the instalment already inside the monthly figure. The equipment is yours from day one.` })}</p>
+          lt: `Įrangą apmoka finansavimo partneris, Jūs mokate ${LOAN_YEARS} ${YEARS(LOAN_YEARS)} (~${EUR(bestFin.loan)}/mėn. baziniam komplektui).`,
+          en: `A financing partner pays for the equipment; you repay over ${LOAN_YEARS} years (~${EUR(bestFin.loan)}/mo on the baseline).` })}</p>
       </button>
-      <button class="acard off" data-approach="upfront" aria-disabled="true">
-        <span class="badge">${t({ lt: "Kol kas neprieinama", en: "Not available yet" })}</span>
+      <button class="acard ${chosenUp ? "sel" : ""}" data-approach="upfront">
+        <span class="badge">${t({ lt: "Galima rinktis", en: "Available" })}</span>
         <h3>${t({ lt: "Didžiausias taupymas, visa kaina iš karto", en: "Optimal saving, full price upfront" })}</h3>
         <div class="afig">
           <div><span class="k">${t({ lt: "Sumokate šiandien", en: "Due today" })}</span><span class="v mono">${EUR(bestUp.upfront)}</span></div>
@@ -384,44 +472,59 @@ const SCREENS = [
             <span class="v mono good">${EUR(bestUp.monthlySaving)}<small>/${t({ lt: "mėn.", en: "mo" })}</small></span></div>
         </div>
         <p>${t({
-          lt: "Jokios paskolos ir jokių palūkanų, todėl mėnesio nauda didžiausia — bet visą sumą reikia turėti šiandien. Per platformą šio būdo dar nesiūlome.",
-          en: "No loan and no interest, so the monthly benefit is as large as it gets — but you need the whole sum today. We do not offer this route through the platform yet." })}</p>
+          lt: `Atsiperkamumas ${NUM(PAYBACK.yearsNoSubsidy, 1)} m. be paramos, ${NUM(PAYBACK.yearsWithSubsidy30, 1)} m. su 30 % parama. Po atsipirkimo — ~${EUR(PAYBACK.afterPaybackSaving)}/mėn.`,
+          en: `Payback ${NUM(PAYBACK.yearsNoSubsidy, 1)} yr with no subsidy, ${NUM(PAYBACK.yearsWithSubsidy30, 1)} yr with 30% subsidy. After payback — ~${EUR(PAYBACK.afterPaybackSaving)}/mo.` })}</p>
       </button>
     </div>`;
+
+    const displayCards = chosenFin ? cards : chosenUp ? ranked.map((fq) => {
+      const uq = upfrontQuote(fq.contractor.id);
+      const c = uq.contractor;
+      return `<button class="rcard ${state.contractor === c.id ? "sel" : ""}" data-contractor="${c.id}">
+        <div class="rhead"><div class="rbrand">${contractorLogo(c, "brandlogo contractor card")}<div>
+          <h3>${c.name}</h3>
+          <div class="since">${EUR(c.price)} · ${t({ lt: "pirkimas iš karto", en: "bought outright" })}</div>
+        </div></div>${stars(c)}</div>
+        ${kitStrip(c)}
+        <div class="rfig">
+          <div><span class="k">${t({ lt: "Mėnesio suma", en: "Monthly cost" })}</span>
+            <span class="v mono">${EUR(uq.monthly)}<small>/${t({ lt: "mėn.", en: "mo" })}</small></span></div>
+          <div><span class="k">${t({ lt: "Metinė nauda", en: "Annual benefit" })}</span>
+            <span class="v mono good">+${EUR(uq.annualBenefit)}</span></div>
+        </div>
+        <ul class="specs">
+          <li><span class="sk">${t({ lt: "Sumokate šiandien", en: "Due today" })}</span><span class="sv">${EUR(c.price)}</span></li>
+          <li><span class="sk">${t({ lt: "Atsiperkamumas", en: "Payback" })}</span>
+            <span class="sv">${NUM(PAYBACK.yearsNoSubsidy, 1)} / ${NUM(PAYBACK.yearsWithSubsidy30, 1)} ${t({ lt: "m.", en: "yr" })}</span></li>
+          <li><span class="sk">${t({ lt: "Po atsipirkimo", en: "After payback" })}</span>
+            <span class="sv">~${EUR(PAYBACK.afterPaybackSaving)}/${t({ lt: "mėn.", en: "mo" })}</span></li>
+        </ul>
+        <div class="honest">${t(c.honest)}</div>
+      </button>`;
+    }).join("") : "";
 
     return `
       <div class="eyebrow">${t({ lt: "Du būdai, keturi rangovai", en: "Two routes, four contractors" })}</div>
       <h1>${t({ lt: "Pasirinkite pasiūlymą", en: "Choose your offer" })}</h1>
       <p class="lede">${t({
-        lt: "Pirmiausia — kaip įsigyjate. Paskui — iš ko. Kiekvienas rangovas pasiūlė savo įrangą, todėl suvienodinome tai, ką galima palyginti: kiek išeina iš namų kiekvieną mėnesį.",
-        en: "First how you buy, then from whom. Each contractor quoted its own hardware, so we normalised the only thing that can be compared: what leaves the household each month." })}</p>
+        lt: "Pirmiausia — kaip įsigyjate. Paskui — iš ko. Pirmasis rangovas cituoja bazinį atvejį; kiti brangesni.",
+        en: "First how you buy, then from whom. The first contractor quotes the baseline case; the others are dearer." })}</p>
 
       <div class="sizing stack">
         <div>
-          <div class="eyebrow" style="margin-bottom:4px">${t({ lt: "Mūsų rekomenduojamas optimalus dydis pagal Jūsų profilį", en: "Our suggested optimal size based on your profile" })}</div>
-          <div class="sz mono">${NUM(SIZING.pv, 0)} kW · ${NUM(SIZING.inverter, 0)} kW · ${NUM(SIZING.battery, 0)} kWh</div>
+          <div class="eyebrow" style="margin-bottom:4px">${t(SCENARIO.label)}</div>
+          <div class="sz mono">${hwLabel(SIZING)}</div>
         </div>
-        <p>${t(SIZING.basis)}. ${t({
-          lt: "Rangovai siūlo apie šį dydį, bet ne lygiai jį — tai jų įranga ir jų sprendimas.",
-          en: "Contractors quote around this, not to it — it is their equipment and their call." })}</p>
+        <p>${t(SIZING.basis)}</p>
       </div>
 
       ${approach}
 
       ${chosen ? `
-        <div class="eyebrow" style="margin-top:28px">${t({ lt: `Keturi pasiūlymai be pradinio įnašo · ${LOAN_YEARS} ${YEARS(LOAN_YEARS)}`, en: `Four quotes with nothing upfront · ${LOAN_YEARS} years` })}</div>
-        <div class="rangovai stack">${cards}</div>
-        ${(() => {
-          const cheap = ranked.find((q) => q.contractor.id === cheapestHardware);
-          const place = ranked.indexOf(cheap) + 1;
-          if (cheap === ranked[0]) return "";
-          return `<div class="callout">
-            <b>${t({ lt: "Pigiausia įranga nėra pigiausias mėnuo.", en: "The cheapest hardware is not the cheapest month." })}</b>
-            ${t({
-              lt: `${cheap.contractor.name} siūlo pigiausią sistemą (${EUR(cheap.contractor.price)}), bet pagal mėnesio sumą yra ${place} vietoje iš ${ranked.length}: ${NUM(cheap.contractor.battery, 0)} kWh kaupiklis uždirba mažesnę vidutinę lankstumo vertę ir mažiau nuima nuo elektros sąskaitos, todėl mažesnė paskolos įmoka to neatsveria. Skaičiuota su „${bestFin.lender.name}“ norma — finansavimo partnerį pasirinksite kitame žingsnyje.`,
-              en: `${cheap.contractor.name} quotes the cheapest system at ${EUR(cheap.contractor.price)}, but comes ${place} of ${ranked.length} on monthly cost: a ${NUM(cheap.contractor.battery, 0)} kWh battery earns a lower average flexibility value and takes less off the electricity bill, so the lower instalment does not make up the difference. Calculated at the ${bestFin.lender.name} rate — you choose the financing partner on the next screen.` })}
-          </div>`;
-        })()}
+        <div class="eyebrow" style="margin-top:28px">${chosenFin
+          ? t({ lt: `Keturi pasiūlymai be pradinio įnašo · ${LOAN_YEARS} ${YEARS(LOAN_YEARS)}`, en: `Four quotes with nothing upfront · ${LOAN_YEARS} years` })
+          : t({ lt: "Keturi pasiūlymai · pirkimas iš karto", en: "Four quotes · bought outright" })}</div>
+        <div class="rangovai stack">${displayCards}</div>
       ` : `
         <div class="honestpanel">
           <b>${t({ lt: "Pasirinkite būdą, kad pamatytumėte rangovų pasiūlymus.", en: "Pick a route to see the contractor quotes." })}</b>
@@ -457,7 +560,7 @@ const SCREENS = [
        en: "Yes, at any time and without a fee — it is a consumer loan. The flexibility agreement is separate from the loan and continues regardless." }],
   ],
   render: () => {
-    const q = quote(state.contractor, state.lender);
+    const q = activeQuote();
     const c = q.contractor;
     const cheapestRate = [...LENDERS].sort((a, b) => a.rate - b.rate)[0].id;
 
@@ -547,16 +650,16 @@ const SCREENS = [
   ],
   can: () => state.dispatch === "yes",
   render: () => {
-    const q = quote(state.contractor, state.lender);
+    const q = activeQuote();
     const c = q.contractor;
-    const withoutFlex = q.monthly + c.flexAvg;
+    const withoutFlex = q.monthly + (c.flexAnnual / 12);
     const yourPct = Math.round(FLEX.share * 100);
     const ourPct = 100 - yourPct;
 
     const choices = [
       ["yes", t({ lt: "Sutinku su kaupiklio valdymu", en: "I agree to battery control" }),
-        t({ lt: `Ignitis valdo įkrovimą ir iškrovimą, Jums lieka ${FLEX.reserveKwh} kWh rezervas. Uždirbtą vertę dalijamės ${yourPct}/${ourPct} — vidutiniškai apie ${EUR(c.flexAvg)}/mėn. Jums.`,
-            en: `Ignitis controls charge and discharge, you keep a ${FLEX.reserveKwh} kWh reserve. The earnings are split ${yourPct}/${ourPct} — around ${EUR(c.flexAvg)}/month to you on average.` })],
+        t({ lt: `Ignitis valdo įkrovimą ir iškrovimą, Jums lieka ${FLEX.reserveKwh} kWh rezervas. Uždirbtą vertę dalijamės ${yourPct}/${ourPct} — vidutiniškai apie ${EUR((c.flexAnnual / 12))}/mėn. Jums.`,
+            en: `Ignitis controls charge and discharge, you keep a ${FLEX.reserveKwh} kWh reserve. The earnings are split ${yourPct}/${ourPct} — around ${EUR((c.flexAnnual / 12))}/month to you on average.` })],
       ["no", t({ lt: "Nesutinku", en: "I decline" }),
         t({ lt: "Kaupiklį valdau tik aš. Platformos pasiūlymo tokiu atveju nėra.",
             en: "I control the battery myself. In that case there is no platform offer." })],
@@ -587,8 +690,8 @@ const SCREENS = [
       <div class="callout">
         <b class="mono">${yourPct} % ${t({ lt: "Jums", en: "to you" })} · ${ourPct} % ${t({ lt: "Ignitis", en: "to Ignitis" })}</b>
         ${t({
-          lt: `Pasidalijimas vienodas ir nesikeičia. ${NUM(c.battery, 0)} kWh kaupikliui tai vidutiniškai apie ${EUR(c.flexAvg)}/mėn., arba ${EUR(c.flexAvg * 12)}/metus — bet tai vidurkis, o ne garantija: gerą mėnesį suma didesnė, tylų mėnesį mažesnė. Kiekvieną mėnesį sąskaitoje matysite ir bendrą sumą, ir savo pusę.`,
-          en: `The split is even and does not change. For a ${NUM(c.battery, 0)} kWh battery that averages around ${EUR(c.flexAvg)}/month, or ${EUR(c.flexAvg * 12)} a year — but it is an average, not a guarantee: a good month pays more, a quiet one less. Every invoice shows both the gross figure and your half.` })}
+          lt: `Pasidalijimas vienodas ir nesikeičia. ${NUM(c.battery, 2)} kWh kaupikliui tai vidutiniškai apie ${EUR((c.flexAnnual / 12))}/mėn., arba ${EUR((c.flexAnnual / 12) * 12)}/metus — bet tai vidurkis, o ne garantija: gerą mėnesį suma didesnė, tylų mėnesį mažesnė. Kiekvieną mėnesį sąskaitoje matysite ir bendrą sumą, ir savo pusę.`,
+          en: `The split is even and does not change. For a ${NUM(c.battery, 2)} kWh battery that averages around ${EUR((c.flexAnnual / 12))}/month, or ${EUR((c.flexAnnual / 12) * 12)} a year — but it is an average, not a guarantee: a good month pays more, a quiet one less. Every invoice shows both the gross figure and your half.` })}
       </div>
 
       <div class="choices stack">${choices}</div>
@@ -597,8 +700,8 @@ const SCREENS = [
       <div class="honestpanel">
         <b>${t({ lt: "Ko ši sutartis Jums neuždeda", en: "What this agreement does not do to you" })}</b>
         ${t({
-          lt: `Įranga yra Jūsų nuo pirmos dienos, ir elektros tiekėjo pasirinkimo neužrakiname — galite išeiti. Bet platforma veikia tik Ignitis klientams, todėl išėję iš tiekimo prarasite ir optimizavimą, ir savo ${yourPct} % rinkos pajamų dalį. Kaupiklis ir paskola liks Jūsų: toliau kaupsite saulę sau, tik be rinkos pajamų.`,
-          en: `The equipment is yours from day one and we do not lock your choice of supplier — you can leave. But the platform only serves Ignitis customers, so leaving supply ends both the optimisation and your ${yourPct}% share of the market revenue. The battery and the loan stay yours: you keep storing your own solar, just without the market income.` })}
+          lt: `Įranga yra Jūsų nuo pirmos dienos, ir elektros tiekėjo pasirinkimo neužrakiname — galite išeiti. Bet platforma veikia tik Ignitis klientams, todėl išėję iš tiekimo prarasite ir optimizavimą, ir savo ${yourPct} % rinkos pajamų dalį. Kaupiklis liks Jūsų: toliau kaupsite saulę sau, tik be rinkos pajamų.`,
+          en: `The equipment is yours from day one and we do not lock your choice of supplier — you can leave. But the platform only serves Ignitis customers, so leaving supply ends both the optimisation and your ${yourPct}% share of the market revenue. The battery stays yours: you keep storing your own solar, just without the market income.` })}
       </div>`;
   },
 },
@@ -627,7 +730,7 @@ const SCREENS = [
   ],
   can: () => state.formFilled,
   render: () => {
-    const q = quote(state.contractor, state.lender);
+    const q = activeQuote();
     const fields = [
       [t({ lt: "Vardas, pavardė", en: "Full name" }), "Darius Petrauskas", false],
       [t({ lt: "Asmens kodas", en: "Personal code" }), "385•••••••••", false],
@@ -705,7 +808,7 @@ const SCREENS = [
        en: "Because without it the customer does not know the application went anywhere. The silence between submitting and deciding is where platforms lose people." }],
   ],
   render: () => {
-    const q = quote(state.contractor, state.lender);
+    const q = activeQuote();
     const c = q.contractor;
 
     return `
@@ -729,7 +832,7 @@ const SCREENS = [
       <div class="card stack">
         <h3>${t({ lt: "Pateiktas pasiūlymas", en: "The deal as submitted" })}</h3>
         <div class="brk" style="margin-top:10px">
-          <div class="l"><span class="partyline">${contractorLogo(c, "brandlogo contractor mini")}${c.name}</span><em>${t(c.brands)} · ${NUM(c.pv)} kW · ${NUM(c.inverter, 0)} kW · ${NUM(c.battery, 0)} kWh</em></div>
+          <div class="l"><span class="partyline">${contractorLogo(c, "brandlogo contractor mini")}${c.name}</span><em>${t(c.brands)} · ${hwLabel(c)}</em></div>
           <div class="v mono">${EUR(c.price)}</div></div>
         <div class="brk"><div class="l"><span class="partyline">${lenderLogo(q.lender, "brandlogo partner mini")}${q.lender.name}</span>
           <em>${t({ lt: `${q.years} ${YEARS(q.years)} · ${NUM(q.lender.rate * 100, 1)} % · pradinis įnašas ${EUR(0)}`,
@@ -738,7 +841,7 @@ const SCREENS = [
         <div class="brk"><div class="l">${t({ lt: "Ignitis — tiekimas ir lankstumas", en: "Ignitis — supply and flexibility" })}
           <em>${t({ lt: `Kaupiklio valdymas, pajamos dalijamos ${Math.round(FLEX.share * 100)}/${Math.round((1 - FLEX.share) * 100)}`,
                      en: `Battery control, revenue split ${Math.round(FLEX.share * 100)}/${Math.round((1 - FLEX.share) * 100)}` })}</em></div>
-          <div class="v mono" style="color:var(--ok)">−${EUR(c.flexAvg)}/${t({ lt: "mėn.", en: "mo" })}</div></div>
+          <div class="v mono" style="color:var(--ok)">−${EUR((c.flexAnnual / 12))}/${t({ lt: "mėn.", en: "mo" })}</div></div>
         <div class="brk total"><div class="l">${t({ lt: "Mėnesio suma, jei bus patvirtinta", en: "Monthly total if approved" })}
           <em>${t({ lt: `dabar mokate ${EUR(PERSONA.currentMonthlyCost)} · skirtumas ${EUR(q.monthlySaving)}/mėn.`,
                      en: `you pay ${EUR(PERSONA.currentMonthlyCost)} today · a difference of ${EUR(q.monthlySaving)}/mo` })}</em></div>
@@ -779,7 +882,7 @@ const SCREENS = [
        en: "From the day the partner pays the contractor, which happens after the installation is signed off. Until then you pay nothing." }],
   ],
   render: () => {
-    const q = quote(state.contractor, state.lender);
+    const q = activeQuote();
     return `
       <div class="timebreak">
         <div class="el">${t({ lt: "Po dviejų darbo dienų", en: "Two working days later" })}</div>
@@ -847,18 +950,23 @@ const SCREENS = [
        en: "Because three different parties carry three different risks. Rolling it into one document would hide who answers for what, and when something breaks that is the thing that matters most." }],
   ],
   render: () => {
-    const q = quote(state.contractor, state.lender);
+    const q = activeQuote();
     const c = q.contractor;
     const yourPct = Math.round(FLEX.share * 100);
+    const financed = Boolean(q.lender);
 
     const order = [
       [t({ lt: "Įranga ir montavimas", en: "Equipment and installation" }),
         `<span class="partyline">${contractorLogo(c, "brandlogo contractor mini")}${c.name} · ${t(c.brands)}</span>`, EUR(c.price)],
-      [t({ lt: "Sistema", en: "System" }), `${NUM(c.pv)} kW · ${NUM(c.inverter, 0)} kW · ${NUM(c.battery, 0)} kWh`, "—"],
-      [t({ lt: "Finansavimas", en: "Financing" }),
-        `<span class="partyline">${lenderLogo(q.lender, "brandlogo partner mini")}${q.lender.name} · ${q.years} ${YEARS(q.years)} · ${NUM(q.lender.rate * 100, 1)} %</span>`,
-        `${EUR(q.loan, 2)}/${t({ lt: "mėn.", en: "mo" })}`],
-      [t({ lt: "Vidutinė lankstumo vertė", en: "Average flexibility value" }), t({ lt: `Ignitis · pajamos dalijamos ${yourPct}/${100 - yourPct}`, en: `Ignitis · revenue split ${yourPct}/${100 - yourPct}` }), `−${EUR(c.flexAvg)}/${t({ lt: "mėn.", en: "mo" })}`],
+      [t({ lt: "Sistema", en: "System" }), hwLabel(c), "—"],
+      financed
+        ? [t({ lt: "Finansavimas", en: "Financing" }),
+          `<span class="partyline">${lenderLogo(q.lender, "brandlogo partner mini")}${q.lender.name} · ${q.years} ${YEARS(q.years)} · ${NUM(q.lender.rate * 100, 1)} %</span>`,
+          `${EUR(q.loan, 2)}/${t({ lt: "mėn.", en: "mo" })}`]
+        : [t({ lt: "Mokėjimas", en: "Payment" }),
+          t({ lt: "Pirkimas iš karto · be paskolos", en: "Bought outright · no loan" }),
+          EUR(c.price)],
+      [t({ lt: "Vidutinė lankstumo vertė", en: "Average flexibility value" }), t({ lt: `Ignitis · pajamos dalijamos ${yourPct}/${100 - yourPct}`, en: `Ignitis · revenue split ${yourPct}/${100 - yourPct}` }), `−${EUR((c.flexAnnual / 12))}/${t({ lt: "mėn.", en: "mo" })}`],
     ].map(([k, s, v]) => `
       <div class="brk"><div class="l">${k}<em>${s}</em></div><div class="v mono">${v}</div></div>`).join("");
 
@@ -866,9 +974,13 @@ const SCREENS = [
       ["hardhat", `<span class="partyline">${contractorLogo(c, "brandlogo contractor mini")}${c.name}</span>`, t({ lt: "Pateikia ir įrengia įrangą", en: "Supplies and installs the equipment" }),
         t({ lt: `Saulės elektrinė, inverteris ir kaupiklis, montavimas, priėmimas ir servisas. Garantijos: kaupiklis ${c.warrantyBattery} m., montavimas ${c.warrantyInstall} m.`,
             en: `The array, inverter and battery, the installation, the sign-off and the service. Warranties: battery ${c.warrantyBattery} years, installation ${c.warrantyInstall} years.` })],
-      ["card", `<span class="partyline">${lenderLogo(q.lender, "brandlogo partner mini")}${q.lender.name}</span>`, t({ lt: "Finansuoja Jus", en: "Finances you" }),
-        t({ lt: `Apmoka rangovui visą ${EUR(c.price)} sumą po montavimo priėmimo. Jūs grąžinate ${q.years} ${YEARS(q.years)} po ${EUR(q.loan, 2)}.`,
-            en: `Pays the contractor the full ${EUR(c.price)} once the installation is signed off. You repay ${EUR(q.loan, 2)} a month over ${q.years} years.` })],
+      financed
+        ? ["card", `<span class="partyline">${lenderLogo(q.lender, "brandlogo partner mini")}${q.lender.name}</span>`, t({ lt: "Finansuoja Jus", en: "Finances you" }),
+          t({ lt: `Apmoka rangovui visą ${EUR(c.price)} sumą po montavimo priėmimo. Jūs grąžinate ${q.years} ${YEARS(q.years)} po ${EUR(q.loan, 2)}.`,
+              en: `Pays the contractor the full ${EUR(c.price)} once the installation is signed off. You repay ${EUR(q.loan, 2)} a month over ${q.years} years.` })]
+        : ["card", t({ lt: "Jūs", en: "You" }), t({ lt: "Apmokate rangovą", en: "Pay the contractor" }),
+          t({ lt: `Sumokate visą ${EUR(c.price)} sumą šiandien. Paskolos nėra — mėnesio sąskaitoje lieka tik elektra ir lankstumas.`,
+              en: `You pay the full ${EUR(c.price)} today. There is no loan — the monthly invoice keeps only electricity and flexibility.` })],
       ["bolt", `<span class="partyline"><img class="brandlogo ignitis mini" src="assets/ignitis-mark.png" alt="Ignitis">Ignitis</span>`, t({ lt: "Tiekia elektrą ir sukuria lankstumo vertę", en: "Supplies the electricity and creates the flexibility value" }),
         t({ lt: `Elektros tiekimas, kaupiklio valdymas ir rinkos pajamos, dalijamos ${yourPct}/${100 - yourPct}. Įrangos maržos negauname ir paskolos neišduodame.`,
             en: `Electricity supply, battery control, and the market revenue split ${yourPct}/${100 - yourPct}. We take no hardware margin and issue no loan.` })],
@@ -883,41 +995,53 @@ const SCREENS = [
        `<span class="partyline">${contractorLogo(c, "brandlogo contractor mini")}${c.name}</span>`,
        t({ lt: `Įranga, montavimas, priėmimas ir servisas. Garantijos: kaupiklis ${c.warrantyBattery} m., montavimas ${c.warrantyInstall} m.`,
            en: `Equipment, installation, sign-off and service. Warranties: battery ${c.warrantyBattery} years, installation ${c.warrantyInstall} years.` })],
-      [t({ lt: "Vartojimo kredito sutartis", en: "Consumer credit agreement" }),
+      ...(financed ? [[t({ lt: "Vartojimo kredito sutartis", en: "Consumer credit agreement" }),
        `<span class="partyline">${lenderLogo(q.lender, "brandlogo partner mini")}${q.lender.name}</span>`,
        t({ lt: `${EUR(c.price)}, ${q.years} ${YEARS(q.years)}, ${NUM(q.lender.rate * 100, 1)} % metinės palūkanos, pradinis įnašas ${EUR(0)}. Atsisakymo teisė — 14 dienų.`,
-           en: `${EUR(c.price)} over ${q.years} years at ${NUM(q.lender.rate * 100, 1)}%, ${EUR(0)} upfront. Fourteen-day right of withdrawal.` })],
+           en: `${EUR(c.price)} over ${q.years} years at ${NUM(q.lender.rate * 100, 1)}%, ${EUR(0)} upfront. Fourteen-day right of withdrawal.` })]] : []),
       [t({ lt: "Lankstumo ir elektros tiekimo sutartis", en: "Flexibility and supply agreement" }),
        `<span class="partyline"><img class="brandlogo ignitis mini" src="assets/ignitis-mark.png" alt="Ignitis">Ignitis</span>`,
-       t({ lt: `Kaupiklio valdymas, rinkos pajamos dalijamos ${yourPct}/${100 - yourPct} (vidutiniškai apie ${EUR(c.flexAvg)}/mėn. Jums), ${FLEX.reserveKwh} kWh rezervas Jums.`,
-           en: `Battery control, market revenue split ${yourPct}/${100 - yourPct} (around ${EUR(c.flexAvg)}/month to you on average), and a ${FLEX.reserveKwh} kWh reserve kept for you.` })],
+       t({ lt: `Kaupiklio valdymas, rinkos pajamos dalijamos ${yourPct}/${100 - yourPct} (vidutiniškai apie ${EUR((c.flexAnnual / 12))}/mėn. Jums), ${FLEX.reserveKwh} kWh rezervas Jums.`,
+           en: `Battery control, market revenue split ${yourPct}/${100 - yourPct} (around ${EUR((c.flexAnnual / 12))}/month to you on average), and a ${FLEX.reserveKwh} kWh reserve kept for you.` })],
     ].map(([b, who, s]) => `
       <li><div><b>${b}</b><span class="with">${t({ lt: "Šalis", en: "Party" })}: ${who}</span><span>${s}</span></div></li>`).join("");
+
+    const agreementCount = financed ? 3 : 2;
 
     return `
       <div class="eyebrow">${t({ lt: "Užsakymas", en: "Your order" })}</div>
       <h1>${t({ lt: "Patvirtinkite ir užsisakykite", en: "Confirm and order" })}</h1>
       <p class="lede">${t({
-        lt: "Viskas suderinta. Belieka pasirašyti tris sutartis — ir šiandien iš Jūsų sąskaitos neišeina nieko.",
-        en: "Everything is agreed. Three signatures left — and nothing leaves your account today." })}</p>
+        lt: financed
+          ? "Viskas suderinta. Belieka pasirašyti tris sutartis — ir šiandien iš Jūsų sąskaitos neišeina nieko."
+          : `Viskas suderinta. Belieka pasirašyti dvi sutartis ir sumokėti ${EUR(c.price)} šiandien.`,
+        en: financed
+          ? "Everything is agreed. Three signatures left — and nothing leaves your account today."
+          : `Everything is agreed. Two signatures left, and ${EUR(c.price)} leaves your account today.` })}</p>
 
       <div class="roles">${roles}</div>
 
       <div class="callout">
         <b>${t({ lt: "Visi mokėjimai automatiškai nukreipiami per Ignitis savitarną.", en: "All payments are routed automatically through Ignitis savitarna." })}</b>
-        ${t({
+        ${financed ? t({
           lt: `Paskolos įmoka „${q.lender.name}“, elektros ir tinklo mokesčiai bei Jūsų ${yourPct} % lankstumo pajamų dalis sudedami į vieną sąskaitą savitarnoje. Jums nereikia nei trijų mokėjimų, nei trijų prisijungimų: nurašoma viena suma, o savitarnoje matote, kiek iš jos keliauja kiekvienai šaliai.`,
-          en: `The instalment to ${q.lender.name}, the electricity and network charges, and your ${yourPct}% share of the flexibility revenue are combined into one invoice in savitarna. No three payments and no three logins: one amount is debited, and savitarna shows how much of it goes to each party.` })}
+          en: `The instalment to ${q.lender.name}, the electricity and network charges, and your ${yourPct}% share of the flexibility revenue are combined into one invoice in savitarna. No three payments and no three logins: one amount is debited, and savitarna shows how much of it goes to each party.` })
+        : t({
+          lt: `Elektros ir tinklo mokesčiai bei Jūsų ${yourPct} % lankstumo pajamų dalis sudedami į vieną sąskaitą savitarnoje. Įrangą apmokėjote šiandien — mėnesio sąskaitoje paskolos nėra.`,
+          en: `Electricity and network charges plus your ${yourPct}% share of flexibility revenue sit on one invoice in savitarna. You paid for the equipment today — there is no loan on the monthly bill.` })}
       </div>
 
       <div class="duetoday">
         <div>
           <span class="k">${t({ lt: "Sumokate šiandien", en: "Due today" })}</span>
-          <span class="v mono">${EUR(0, 2)}</span>
+          <span class="v mono">${EUR(financed ? 0 : c.price, 2)}</span>
         </div>
-        <div class="then">${t({
+        <div class="then">${financed ? t({
           lt: `Pirmoji ${EUR(q.loan, 2)} įmoka — mėnesį po montavimo priėmimo. Iki tol nemokate nieko, net jei montavimas užtruktų.`,
-          en: `The first instalment of ${EUR(q.loan, 2)} falls a month after the installation is signed off. Until then you pay nothing, even if the install slips.` })}</div>
+          en: `The first instalment of ${EUR(q.loan, 2)} falls a month after the installation is signed off. Until then you pay nothing, even if the install slips.` })
+        : t({
+          lt: `Po atsipirkimo (~${NUM(PAYBACK.yearsNoSubsidy, 1)} m. be paramos) mėnesio taupymas — apie ${EUR(PAYBACK.afterPaybackSaving)}.`,
+          en: `After payback (~${NUM(PAYBACK.yearsNoSubsidy, 1)} yr with no subsidy) monthly saving is about ${EUR(PAYBACK.afterPaybackSaving)}.` })}</div>
       </div>
 
       <div class="card stack">
@@ -932,10 +1056,12 @@ const SCREENS = [
       </div>
 
       <div class="card">
-        <h3>${t({ lt: "Pasirašote tris sutartis, ne vieną", en: "You are signing three agreements, not one" })}</h3>
+        <h3>${t({
+          lt: `Pasirašote ${agreementCount === 3 ? "tris" : "dvi"} sutartis, ne vieną`,
+          en: `You are signing ${agreementCount === 3 ? "three" : "two"} agreements, not one` })}</h3>
         <p style="font-size:13px;color:var(--navy-45);margin:6px 0 14px">${t({
-          lt: "Trys šalys, trys skirtingos rizikos. Platforma jas surenka į vieną vietą, bet nesulieja į vieną dokumentą.",
-          en: "Three parties, three different risks. The platform collects them in one place without merging them into one document." })}</p>
+          lt: "Skirtingos šalys, skirtingos rizikos. Platforma jas surenka į vieną vietą, bet nesulieja į vieną dokumentą.",
+          en: "Different parties, different risks. The platform collects them in one place without merging them into one document." })}</p>
         <ul class="agreements">${agreements}</ul>
       </div>
 
@@ -971,11 +1097,14 @@ const SCREENS = [
        en: "You can, because the equipment is yours. Support follows the owner, so it goes to you and not to Ignitis. If it comes through, we recalculate the instalment." }],
   ],
   render: () => {
-    const q = quote(state.contractor, state.lender);
+    const q = activeQuote();
     const c = q.contractor;
+    const financed = Boolean(q.lender);
     const steps = [
       [t({ lt: "Šiandien", en: "Today" }),
-       t({ lt: `Trys sutartys pasirašytos. Iš Jūsų sąskaitos nepaimta ${EUR(0)}.`, en: `Three agreements signed. ${EUR(0)} taken from your account.` })],
+       financed
+         ? t({ lt: `Trys sutartys pasirašytos. Iš Jūsų sąskaitos nepaimta ${EUR(0)}.`, en: `Three agreements signed. ${EUR(0)} taken from your account.` })
+         : t({ lt: `Dvi sutartys pasirašytos. Sumokėta ${EUR(c.price)} už įrangą.`, en: `Two agreements signed. ${EUR(c.price)} paid for the equipment.` })],
       [t({ lt: "Per 3 darbo dienas", en: "Within 3 working days" }),
        t({ lt: `Mindaugas iš „${c.name}“ paskambins ir suderins objekto apžiūrą. Apžiūra nemokama ir užtrunka apie pusvalandį.`,
            en: `Mindaugas from ${c.name} calls to arrange the site survey. It is free and takes about half an hour.` })],
@@ -989,8 +1118,11 @@ const SCREENS = [
        t({ lt: "ESO leidimas gaminti ir kaupiklio prijungimas prie Ignitis platformos. Nuo šios dienos jis pradeda uždirbti.",
            en: "Grid permission to generate, and the battery is connected to the Ignitis platform. From this day it starts earning." })],
       [t({ lt: "Pirmoji sąskaita", en: "First invoice" }),
-       t({ lt: `Mėnesį po priėmimo, Ignitis savitarnoje. Vienoje sąskaitoje: elektra, ${EUR(q.loan, 2)} paskolos įmoka „${q.lender.name}“ ir Jūsų lankstumo pajamų dalis — vidutiniškai apie ${EUR(c.flexAvg)}.`,
-           en: `A month after sign-off, in Ignitis savitarna. One invoice with the electricity, the ${EUR(q.loan, 2)} instalment to ${q.lender.name}, and your share of the flexibility revenue — around ${EUR(c.flexAvg)} on average.` })],
+       financed
+         ? t({ lt: `Mėnesį po priėmimo, Ignitis savitarnoje. Vienoje sąskaitoje: elektra, ${EUR(q.loan, 2)} paskolos įmoka „${q.lender.name}“ ir Jūsų lankstumo pajamų dalis — vidutiniškai apie ${EUR((c.flexAnnual / 12))}.`,
+             en: `A month after sign-off, in Ignitis savitarna. One invoice with the electricity, the ${EUR(q.loan, 2)} instalment to ${q.lender.name}, and your share of the flexibility revenue — around ${EUR((c.flexAnnual / 12))} on average.` })
+         : t({ lt: `Mėnesį po priėmimo, Ignitis savitarnoje. Vienoje sąskaitoje: elektra ir Jūsų lankstumo pajamų dalis — vidutiniškai apie ${EUR((c.flexAnnual / 12))}. Paskolos nėra.`,
+             en: `A month after sign-off, in Ignitis savitarna. One invoice with the electricity and your share of the flexibility revenue — around ${EUR((c.flexAnnual / 12))} on average. No loan.` })],
     ].map(([b, s]) => `<li><b>${b}</b><span>${s}</span></li>`).join("");
 
     return `
@@ -999,9 +1131,13 @@ const SCREENS = [
         ${contractorLogo(c, "brandlogo contractor hero")}
         <h1>${t({ lt: "Kas bus toliau", en: "What happens next" })}</h1>
       </div>
-      <p class="lede partyline">${contractorLogo(c, "brandlogo contractor mini")}${lenderLogo(q.lender, "brandlogo partner mini")}${t({
-        lt: `${c.name} · ${NUM(c.pv)} kW ir ${NUM(c.battery, 0)} kWh · „${q.lender.name}“, ${q.years} ${YEARS(q.years)} · ${EUR(q.monthly)} per mėnesį.`,
-        en: `${c.name} · ${NUM(c.pv)} kW and ${NUM(c.battery, 0)} kWh · ${q.lender.name}, ${q.years} years · ${EUR(q.monthly)} a month.` })}</p>
+      <p class="lede partyline">${contractorLogo(c, "brandlogo contractor mini")}${financed ? lenderLogo(q.lender, "brandlogo partner mini") : ""}${t({
+        lt: financed
+          ? `${c.name} · ${hwLabel(c)} · „${q.lender.name}“, ${q.years} ${YEARS(q.years)} · ${EUR(q.monthly)} per mėnesį.`
+          : `${c.name} · ${hwLabel(c)} · pirkimas iš karto · ${EUR(q.monthly)} per mėnesį.`,
+        en: financed
+          ? `${c.name} · ${hwLabel(c)} · ${q.lender.name}, ${q.years} years · ${EUR(q.monthly)} a month.`
+          : `${c.name} · ${hwLabel(c)} · bought outright · ${EUR(q.monthly)} a month.` })}</p>
 
       <div class="card stack"><ul class="timeline">${steps}</ul></div>
 
@@ -1048,7 +1184,7 @@ const SCREENS = [
        en: `Exactly what you did — we split it. We show the gross figure precisely because "you are making money from my equipment" is the objection that kills this product if left unanswered.` }],
   ],
   render: () => {
-    const q = quote(state.contractor, state.lender);
+    const q = activeQuote();
     const c = q.contractor;
 
     /* A good month: the market paid well, so the customer's half is above the
@@ -1057,7 +1193,8 @@ const SCREENS = [
     const credited = Math.round(flexGross * FLEX.share);
     const energy = c.billAfter * 0.72;
     const network = c.billAfter * 0.28;
-    const total = c.billAfter + q.loan - c.exportIncome - credited;
+    const financed = Boolean(q.lender);
+    const total = c.billAfter + (financed ? q.loan : 0) - (c.exportAnnual / 12) - credited;
 
     const ops = [
       [t({ lt: "Naktys, krautos pigiomis zonomis", en: "Nights charged in cheap zones" }),
@@ -1085,10 +1222,10 @@ const SCREENS = [
             <span class="mono">${EUR(energy, 2)}</span></div>
           <div class="billrow"><span>${t({ lt: "Tinklo mokesčiai", en: "Network charges" })}</span>
             <span class="mono">${EUR(network, 2)}</span></div>
-          <div class="billrow"><span class="partyline">${lenderLogo(q.lender, "brandlogo partner mini")}${t({ lt: `Paskolos įmoka — „${q.lender.name}“, ${q.years} m.`, en: `Loan instalment — ${q.lender.name}, ${q.years} yr` })}</span>
-            <span class="mono">${EUR(q.loan, 2)}</span></div>
+          ${financed ? `<div class="billrow"><span class="partyline">${lenderLogo(q.lender, "brandlogo partner mini")}${t({ lt: `Paskolos įmoka — „${q.lender.name}“, ${q.years} m.`, en: `Loan instalment — ${q.lender.name}, ${q.years} yr` })}</span>
+            <span class="mono">${EUR(q.loan, 2)}</span></div>` : ""}
           <div class="billrow credit"><span>${t({ lt: "Į tinklą atiduota saulės energija", en: "Solar exported to the grid" })}</span>
-            <span class="mono">−${EUR(c.exportIncome, 2)}</span></div>
+            <span class="mono">−${EUR((c.exportAnnual / 12), 2)}</span></div>
           <div class="billrow credit"><span>${t({
             lt: `Lankstumo pajamų dalis — uždirbta ${EUR(flexGross)}, Jums ${Math.round(FLEX.share * 100)} %`,
             en: `Your share of flexibility revenue — ${EUR(flexGross)} earned, ${Math.round(FLEX.share * 100)}% yours` })}</span>
@@ -1096,8 +1233,8 @@ const SCREENS = [
           <div class="billrow foot"><span>${t({ lt: "Iš viso", en: "Total" })}</span><span class="mono">${EUR(total, 2)}</span></div>
         </div>
         <p style="font-size:13px;color:var(--navy-45);margin-top:14px">${t({
-          lt: `Pasirašant skaičiavome vidutiniškai ${EUR(c.flexAvg)}/mėn. Šis mėnuo buvo geresnis: rinkoje uždirbta ${EUR(flexGross)}, todėl Jūsų pusė — ${EUR(credited)}. Sausį kaupiklis uždirbo tik ${EUR(MONTH.previousMonth.earned)}, ir tą mėnesį Jums atiteko ${EUR(Math.round(MONTH.previousMonth.earned * FLEX.share))}. Pasidalijimas visada tas pats; suma kinta.`,
-          en: `At signing we quoted an average of ${EUR(c.flexAvg)}/month. This month was better: ${EUR(flexGross)} was earned in the market, so your half came to ${EUR(credited)}. In January the battery earned only ${EUR(MONTH.previousMonth.earned)}, and your share that month was ${EUR(Math.round(MONTH.previousMonth.earned * FLEX.share))}. The split never changes; the amount does.` })}</p>
+          lt: `Pasirašant skaičiavome vidutiniškai ${EUR((c.flexAnnual / 12))}/mėn. Šis mėnuo buvo geresnis: rinkoje uždirbta ${EUR(flexGross)}, todėl Jūsų pusė — ${EUR(credited)}. Sausį kaupiklis uždirbo tik ${EUR(MONTH.previousMonth.earned)}, ir tą mėnesį Jums atiteko ${EUR(Math.round(MONTH.previousMonth.earned * FLEX.share))}. Pasidalijimas visada tas pats; suma kinta.`,
+          en: `At signing we quoted an average of ${EUR((c.flexAnnual / 12))}/month. This month was better: ${EUR(flexGross)} was earned in the market, so your half came to ${EUR(credited)}. In January the battery earned only ${EUR(MONTH.previousMonth.earned)}, and your share that month was ${EUR(Math.round(MONTH.previousMonth.earned * FLEX.share))}. The split never changes; the amount does.` })}</p>
       </div>
 
       <div class="card">
@@ -1156,6 +1293,10 @@ function renderAgent(s) {
 function go(i) {
   if (i < 0) return;
   if (i >= SCREENS.length) return reset();
+  /* Upfront path has no lender/credit screens — bounce step clicks away. */
+  if (state.approach === "upfront" && (i === 3 || i === 5 || i === 6 || i === 7)) {
+    i = i <= 3 ? 4 : 8;
+  }
   state.i = i;
   state.log = [];
   render();
@@ -1163,6 +1304,8 @@ function go(i) {
 
 function reset() {
   state.i = 0;
+  state.scenario = "full";
+  setScenario("full");
   state.approach = null;
   state.contractor = null;
   state.lender = "seb";
@@ -1174,7 +1317,7 @@ function reset() {
 
 document.addEventListener("click", (e) => {
   const node = e.target.closest(
-    "[data-approach],[data-contractor],[data-lender],[data-dispatch],[data-fill],[data-step],[data-goto],[data-ask],[data-lang]");
+    "[data-scenario],[data-approach],[data-contractor],[data-lender],[data-dispatch],[data-fill],[data-step],[data-goto],[data-ask],[data-lang]");
   if (!node) return;
 
   if (node.dataset.lang) {
@@ -1186,11 +1329,19 @@ document.addEventListener("click", (e) => {
     return render();
   }
 
-  /* Only the financed route is live; the upfront card is shown for comparison
-     and deliberately does nothing when clicked. */
+  if (node.dataset.scenario) {
+    state.scenario = node.dataset.scenario;
+    setScenario(state.scenario);
+    state.approach = null;
+    state.contractor = null;
+    state.dispatch = null;
+    state.formFilled = false;
+    return render();
+  }
+
   if (node.dataset.approach) {
-    if (node.dataset.approach !== "financed") return;
-    state.approach = "financed";
+    state.approach = node.dataset.approach;
+    state.contractor = null;
     return render();
   }
 
@@ -1224,8 +1375,8 @@ document.addEventListener("click", (e) => {
   }
 });
 
-el("nextBtn").onclick = () => go(state.i + 1);
-el("backBtn").onclick = () => go(state.i - 1);
+el("nextBtn").onclick = () => go(nextIndex(state.i));
+el("backBtn").onclick = () => go(prevIndex(state.i));
 el("resetBtn").onclick = reset;
 
 el("railBtn").onclick = () => {
@@ -1235,8 +1386,8 @@ el("railBtn").onclick = () => {
 
 document.addEventListener("keydown", (e) => {
   if (e.target.matches("input,textarea")) return;
-  if (e.key === "ArrowRight" && !el("nextBtn").disabled) go(state.i + 1);
-  if (e.key === "ArrowLeft") go(state.i - 1);
+  if (e.key === "ArrowRight" && !el("nextBtn").disabled) go(nextIndex(state.i));
+  if (e.key === "ArrowLeft") go(prevIndex(state.i));
 });
 
 render();
