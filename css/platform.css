@@ -1,7 +1,7 @@
 /* Platform demo — contractor variant.
    Loaded after styles.css. Only the components the household mockup does not
-   already have: language switch, contractor marketplace, credit application,
-   the return-and-decision beat, checkout and pool status. Everything else
+   already have: language switch, approach cards, contractor marketplace, credit
+   application, the submitted-and-decided beats and checkout. Everything else
    (cards, kit strip, breakdown rows, timeline, bill, choice cards, dcard)
    is reused unchanged. */
 
@@ -28,6 +28,12 @@
 .langbtn + .langbtn { border-left: 1px solid var(--line-strong); }
 .langbtn:hover { color: var(--navy); }
 .langbtn.on { background: var(--navy); color: #fff; }
+
+/* Four facts read better as a square than as a row of three plus an orphan. */
+.factgrid-4 { grid-template-columns: repeat(2, 1fr); }
+
+/* Two tiles rather than four, so they must not stretch to fill the card. */
+.kit-pair { max-width: 260px; }
 
 /* ---------- three-party strip ---------- */
 
@@ -130,6 +136,38 @@
 .brk .l em.partyline,
 .brk .l em { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .agreements .with .partyline { margin-left: 2px; }
+
+/* ---------- how you buy ---------- */
+
+.approach { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-top: 18px; align-items: start; }
+.acard {
+  background: var(--surface); border: 1.5px solid var(--line); border-radius: var(--radius);
+  padding: 20px; cursor: pointer; position: relative; text-align: left;
+  transition: border-color .16s, box-shadow .16s, transform .16s;
+}
+.acard:hover { border-color: var(--navy-45); }
+.acard.sel { border-color: var(--navy); box-shadow: var(--shadow-lift); transform: translateY(-2px); }
+/* Reserve two lines so the figures line up even when one title wraps. */
+.acard h3 { font-size: 18px; max-width: 24ch; min-height: 2.5em; }
+.acard p { font-size: 13px; color: var(--navy-70); margin: 14px 0 0; }
+.acard .badge {
+  position: absolute; top: -10px; left: 18px; font-size: 10.5px; font-weight: 700;
+  letter-spacing: .06em; text-transform: uppercase; padding: 3px 10px; border-radius: 999px;
+  background: linear-gradient(96deg, var(--teal), var(--cyan)); color: var(--navy-deep);
+}
+/* The second route is priced and shown, but not yet offered through us. */
+.acard.off { cursor: not-allowed; opacity: .55; border-style: dashed; }
+.acard.off:hover { border-color: var(--line); }
+.acard.off .badge { background: var(--line); color: var(--navy-45); }
+
+.afig {
+  display: flex; gap: 22px; margin-top: 16px; padding: 14px 15px;
+  border-radius: var(--radius-sm); background: #f7f9fd; border: 1px solid var(--line);
+}
+.afig .k { font-size: 10.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--navy-45); }
+.afig .v { font-size: 25px; font-weight: 700; letter-spacing: -.025em; display: block; }
+.afig .v small { font-size: 12.5px; font-weight: 500; color: var(--navy-45); letter-spacing: 0; }
+.afig .good { color: var(--ok); }
 
 /* ---------- contractor marketplace ---------- */
 
@@ -266,6 +304,14 @@ html[lang="en"] .honest::before { content: "Honestly: "; }
 .decision h2 { margin: 14px 0 4px; }
 .decision .by { font-size: 13px; color: var(--navy-70); }
 
+/* Same panel while the partner is still deciding: amber rather than green. */
+.decision.pending { border-color: #f0dcc2; background: #fdf7ee; }
+.decision .wait {
+  display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700;
+  letter-spacing: .06em; text-transform: uppercase; color: var(--warn);
+  background: #fff; border: 1px solid #f0dcc2; border-radius: 999px; padding: 5px 13px;
+}
+
 /* ---------- checkout ---------- */
 
 .duetoday {
@@ -291,15 +337,21 @@ html[lang="en"] .honest::before { content: "Honestly: "; }
 .agreements span { display: block; font-size: 12.5px; color: var(--navy-45); }
 .agreements .with { font-size: 12px; font-weight: 650; color: var(--blue); margin: 1px 0 3px; }
 
-/* ---------- pool status ---------- */
+/* ---------- the bottom line ---------- */
 
-.pool { margin-top: 14px; }
-.poolbar {
-  height: 10px; border-radius: 999px; background: var(--line); overflow: hidden; margin: 12px 0 8px;
+/* The difference against the current bill, below the breakdown total. This is
+   the figure the whole offer rests on, so it gets its own band. */
+.diffline {
+  display: flex; align-items: center; justify-content: space-between; gap: 18px;
+  margin-top: 14px; padding: 16px 18px; border-radius: var(--radius);
+  border: 1.5px solid #cdeee6; background: #eefaf7;
 }
-.poolbar i { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--teal), var(--cyan)); }
-.poolnote { display: flex; justify-content: space-between; font-size: 12px; color: var(--navy-45); }
+.diffline .k { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--navy-45); }
+.diffline em { display: block; font-style: normal; font-size: 12.5px; color: var(--navy-70); margin-top: 3px; }
+.diffline b { font-size: 29px; font-weight: 700; letter-spacing: -.025em; color: var(--ok); white-space: nowrap; }
+.diffline.neg { border-color: #f6d2cf; background: #fdeeed; }
+.diffline.neg b { color: var(--bad); }
 
 @media (max-width: 1180px) {
-  .rangovai, .roles, .form { grid-template-columns: 1fr; }
+  .rangovai, .roles, .approach, .form { grid-template-columns: 1fr; }
 }

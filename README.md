@@ -132,8 +132,8 @@ Where the household mockup asks *will a household say yes*, this one asks *can w
 we fund no part of*. It walks one customer through the Ignitis platform in the operating model on
 slide 8 of *Residential BESS Operating Models*: the independent platform/orchestrator, contractor
 variant. The customer picks a contractor, takes a point-of-sale loan with nothing upfront, grants
-mandatory dispatch control in exchange for a guaranteed flexibility floor, and ends up owning the
-hardware. Ignitis puts in no capital and takes no hardware margin.
+mandatory dispatch control in exchange for half of what the battery earns in the market, and ends up
+owning the hardware. Ignitis puts in no capital and takes no hardware margin.
 
 It runs in **Lithuanian by default**, with an LT/EN toggle in the top bar. The two mockups sit on
 opposite sides of fork 1 in [docs/flexibility-origination-decision-map.md](docs/flexibility-origination-decision-map.md)
@@ -151,56 +151,64 @@ Then open <http://127.0.0.1:4321/platform.html>.
 Full per-screen element list and the two flow diagrams are in
 [docs/platform-flow.md](docs/platform-flow.md).
 
-0. **Profilis** — the persona. 10,000 kWh/yr, heat pump, no solar, no battery, €1,800 in savings
-   against a €9,500 system. The point is that upfront capital is the binding constraint.
-1. **Galimybė** — nothing upfront, and all three parties named on the first screen.
-2. **Sutikimas** — the DataHub gate. Without it, every contractor would need a site visit to quote.
-3. **Rangovai** — four contractors quoting *their own* bundles, normalised to monthly cost and
-   annual benefit.
-4. **Pasiūlymas** — 5 / 10 / 15 year terms, zero upfront on all three.
-5. **Lankstumas** — the mandatory dispatch gate. Declining produces a dead end, not a worse price.
-6. **Paraiška** — the credit application, filled by a button.
+0. **Profilis** — the persona in four facts: 10,000 kWh/yr, around €200/month, an air-to-water heat
+   pump and an EV charged at home. No solar and no battery, which is the premise.
+1. **Galimybė** — save around €38 a month without spending a euro, and all three parties named on the
+   first screen.
+2. **Pasiūlymai** — two routes, one offered. Choosing *pay nothing upfront* reveals four contractors
+   quoting *their own* bundles, normalised to monthly cost and annual benefit.
+3. **Finansavimas** — three financing partners, all ten years with zero upfront. The rate and the
+   decision speed are what differ.
+4. **Lankstumas** — the mandatory dispatch gate, with the revenue share stated as a percentage.
+   Declining produces a dead end, not a worse price.
+5. **Paraiška** — the credit application at the named provider, filled by a button, flagged as the
+   last step on the customer's side.
+6. **Pateikta** — submitted and pending, with the deal restated and a decision promised by email.
 7. **Sprendimas** — the time break. Two days pass, then the decision is waiting.
-8. **Atsiskaitymas** — €0.00 due today, and three separate agreements.
-9. **Montavimas** — survey, install, commissioning, and the asset joining the pool.
-10. **Po pusmečio** — the invoice, with the floor and the upside share as separate lines.
+8. **Atsiskaitymas** — €0.00 due today, who does what, and everything routed through savitarna.
+9. **Montavimas** — survey, install, commissioning, and the first combined invoice.
+10. **Po pusmečio** — the invoice, with the gross market revenue and the customer's half side by side.
 
 ## What actually argues the strategy
 
 **Cheapest hardware is not the cheapest month.** The €11,200 bundle has the lowest monthly cost
-(€162) and the €7,900 bundle the highest (€178), because a bigger battery earns a bigger flexibility
-floor and takes more off the electricity bill. Normalising four non-comparable bundles into one
-comparable figure *is* the platform's product, and screen 3 is where that becomes visible.
+(€162) and the €7,900 bundle the highest (€178), because a bigger battery earns a larger average
+flexibility value and takes more off the electricity bill. Normalising four non-comparable bundles
+into one comparable figure *is* the platform's product, and screen 2 is where that becomes visible.
 
 **Declining dispatch is a dead end, not a discount.** Ignitis takes no hardware margin and issues no
-loan, so control is the only thing it earns from. Screen 5 says so in those words and leaves the
+loan, so control is the only thing it earns from. Screen 4 says so in those words and leaves the
 customer's unaided alternative explicitly open.
 
-**The floor is a contractual minimum, not a forecast.** BBCM capacity clearing prices are not
-published, so an uncapped revenue estimate would be a promise. Screen 10 shows a month where the
-market beat the floor and names the month where it did not.
+**A share is sayable where a guarantee is not.** BBCM capacity clearing prices are not published, so
+promising a monthly minimum would mean either guessing or charging for the risk. The demo states a
+50/50 split and an average instead, and screen 10 sets a good month against a named quiet one to show
+that the average cuts both ways.
 
-**The time break is where platforms lose people.** Screens 6 and 7 are separated by two days, and
-the party that brings the customer back is Ignitis rather than the lender or the contractor. That is
-the clearest argument in the build for why origination belongs in retail.
+**The bottom line is the comparison, not the price.** Every monthly breakdown ends with the current
+bill and the difference against it, because €162 a month only means anything next to the €200 the
+household pays today.
 
-**Five years is loss-making and the demo says so.** At a five-year term every bundle costs more per
-month than the current bill, and the annual benefit renders negative. Fifteen years outlives the
-battery warranty, and that gets its own warning panel.
+**The time break is where platforms lose people.** Screens 5 to 7 cover submission, the pending wait
+and the return, and the party that brings the customer back is Ignitis rather than the lender or the
+contractor. That is the clearest argument in the build for why origination belongs in retail.
+
+**One route is priced and refused.** Screen 2 shows what buying outright would save and then declines
+to sell it, which is the honest way to say the platform exists for households without the capital.
 
 ## Tuning the numbers
 
 Everything lives in [js/platform-model.js](js/platform-model.js):
 
 - `CONTRACTORS` — the four bundles, their hardware, prices, warranties, ratings, and the per-bundle
-  `billAfter` / `exportIncome` / `flexFloor` that drive the normalised figures
-- `TERMS` — the three loan terms, rates and financing partners
-- `FLEX` — the upside split and the reserve the customer keeps
-- `PERSONA`, `SIZING`, `POOL`, `MONTH` — the household, the derived recommendation, the aggregation
-  state and the illustrative operating month
+  `billAfter` / `exportIncome` / `flexAvg` that drive the normalised figures
+- `LENDERS` and `LOAN_YEARS` — the three financing partners and the fixed ten-year term
+- `FLEX` — the revenue split and the reserve the customer keeps
+- `PERSONA`, `SIZING`, `MONTH` — the household, the derived recommendation and the illustrative
+  operating month
 
 All copy is stored as `{ lt, en }` pairs and resolved through `t()`. `YEARS()` handles Lithuanian
-numeral agreement, since 5 takes *metai* but 10 and 15 take *metų*.
+numeral agreement, since 10 takes *metų* where 5 would take *metai*.
 
 ## Caveats on this one
 
