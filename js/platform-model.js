@@ -1,19 +1,19 @@
 /* Value model for the Ignitis platform demo — contractor variant.
 
    The customer owns the asset. A financing partner pays for it through a
-   point-of-sale loan. A contractor on the platform supplies, installs and
-   services it. Ignitis holds the dispatch right and settles everything on one
-   invoice, with no capital of its own at risk.
+   point-of-sale loan over ten years. A contractor on the platform supplies,
+   installs and services it. Ignitis operates the battery, shares the flexibility
+   revenue evenly, and settles everything on one invoice — with no capital of its
+   own at risk.
 
    Every figure here is illustrative. The baseline is anchored on slide 5 of
    Residential_BESS_Operating_Models so the numbers hang together: a
-   10,000 kWh/yr household, roughly €200/month before and €169/month after a
-   10 kW array with a 16 kWh battery on a ten-year loan. */
+   10,000 kWh/yr household paying roughly €200/month today. */
 
 const LANG = { current: "lt" };
 
-/* Copy lives as { lt, en } pairs. With no presenter layer every string in the
-   demo is customer-facing, so the whole surface translates. */
+/* Copy lives as { lt, en } pairs. Every string in the demo is customer-facing,
+   so the whole surface translates. */
 const t = (o) => (typeof o === "string" ? o : o[LANG.current] ?? o.lt);
 
 const EUR = (n, dp = 0) => {
@@ -51,11 +51,10 @@ const PERSONA = {
     en: "Two kids · both parents work away from home on weekdays",
   },
   consumption: 10000,
-  waterHeating: 2000,
   heatPumpYear: 2021,
+  evYear: 2024,
   currentMonthlyCost: 200,
   currentAnnualCost: 2400,
-  savings: 1800,          // what he has available — far short of a 9,000 € system
 };
 
 /* What his own data suggests, shown as a derived recommendation rather than a
@@ -65,60 +64,61 @@ const SIZING = {
   inverter: 12,
   battery: 16,
   basis: {
-    lt: "Pagal 10 000 kWh metinį vartojimą, šilumos siurblio profilį ir vakarinį pikį",
-    en: "From 10,000 kWh of annual use, the heat-pump profile and the evening peak",
+    lt: "Pagal 10 000 kWh metinį vartojimą, šilumos siurblio ir elektromobilio profilį bei vakarinį pikį",
+    en: "From 10,000 kWh of annual use, the heat-pump and EV profile, and the evening peak",
   },
 };
 
-/* Flexibility reaches the customer as a guaranteed monthly floor netted off the
-   instalment, with anything above it split evenly. The floor is what makes the
-   monthly figure sayable at all — BBCM capacity clearing prices are not
-   published, so an uncapped estimate would be a promise we cannot make. */
+/* No guaranteed minimum. Ignitis operates the battery and splits what it earns
+   in the market evenly, so what appears in the monthly figure is an average of
+   what the asset has actually been worth — not a promise. BBCM capacity clearing
+   prices are not published, which is exactly why this is stated as a share. */
 const FLEX = {
-  upsideShare: 0.5,
+  share: 0.5,
   reserveKwh: 3,
   reserveHours: 9,
 };
 
-/* Point-of-sale loan. Zero upfront on every term — that is the whole offer.
-   The platform shows the best partner offer per term rather than one lender. */
-const TERMS = [
+/* Point-of-sale loan, zero upfront, fixed at ten years. What the customer
+   chooses is which financing partner on the platform funds it, so the
+   comparison is a rate comparison rather than a cash-flow one. */
+const LOAN_YEARS = 10;
+
+const LENDERS = [
   {
-    years: 5,
-    rate: 0.045,
-    partner: "Nordkreditas",
-    note: {
-      lt: "Mažiausiai palūkanų, bet įmoka viršija dabartinę sąskaitą.",
-      en: "Least interest paid, but the instalment exceeds the current bill.",
-    },
-  },
-  {
-    years: 10,
+    id: "ft",
+    name: "Finansų Tiltas",
     rate: 0.05,
-    partner: "Finansų Tiltas",
     note: {
-      lt: "Įmoka telpa į dabartinę sąskaitą ir baigiasi kartu su kaupiklio garantija.",
-      en: "The instalment fits inside the current bill and ends with the battery warranty.",
+      lt: "Mažiausia metinė norma platformoje. Sprendimas per 2 darbo dienas.",
+      en: "The lowest rate on the platform. A decision within two working days.",
     },
   },
   {
-    years: 15,
-    rate: 0.056,
-    partner: "Finansų Tiltas",
+    id: "nk",
+    name: "Nordkreditas",
+    rate: 0.054,
     note: {
-      lt: "Mažiausia mėnesio įmoka, bet 15 metų ilgiau nei įrangos garantija.",
-      en: "Lowest monthly cost, but fifteen years outlives the equipment warranty.",
+      lt: "Priima paraiškas ir su esamais įsipareigojimais, bet norma didesnė.",
+      en: "Accepts applications alongside existing obligations, at a higher rate.",
+    },
+  },
+  {
+    id: "bk",
+    name: "Baltijos Kreditas",
+    rate: 0.059,
+    note: {
+      lt: "Greičiausias sprendimas — tą pačią dieną, bet už tai sumokate norma.",
+      en: "The fastest decision, same day, paid for in the rate.",
     },
   },
 ];
-
-const PARTNER_COUNT = 3;   // how many financing partners the platform compared
 
 /* Four contractors, each quoting its own hardware. This is the defining feature
    of the contractor variant: the bundles are not comparable as specifications,
    so the platform has to normalise them into monthly cost and annual benefit.
 
-   billAfter / exportIncome / flexFloor are stated per bundle rather than derived
+   billAfter / exportIncome / flexAvg are stated per bundle rather than derived
    from kW, because all of it is illustrative and legible numbers argue better
    than a scaling formula nobody can check in the room. */
 const CONTRACTORS = [
@@ -140,9 +140,9 @@ const CONTRACTORS = [
     response: { lt: "Reakcija per 48 val.", en: "48-hour response" },
     billAfter: 120,
     exportIncome: 31,
-    flexFloor: 22,
+    flexAvg: 22,
     honest: {
-      lt: "Ilgiausias laukimas tarp vidutinės kainos pasiūlymų — šeši mėnesiai metų pradžioje.",
+      lt: "Ilgiausias laukimas tarp vidutinės kainos pasiūlymų — šešios savaitės metų pradžioje.",
       en: "The longest wait among the mid-priced bundles — six weeks at the front of the year.",
     },
   },
@@ -164,7 +164,7 @@ const CONTRACTORS = [
     response: { lt: "Reakcija per 72 val.", en: "72-hour response" },
     billAfter: 128,
     exportIncome: 28,
-    flexFloor: 21,
+    flexAvg: 21,
     honest: {
       lt: "Trumpiausia montavimo garantija platformoje — treji metai, o ne penki.",
       en: "The shortest installation warranty on the platform — three years, not five.",
@@ -188,7 +188,7 @@ const CONTRACTORS = [
     response: { lt: "Reakcija per 24 val.", en: "24-hour response" },
     billAfter: 108,
     exportIncome: 37,
-    flexFloor: 28,
+    flexAvg: 28,
     honest: {
       lt: "Didžiausia kaina ir ilgiausias laukimas. Mėnesio nauda didesnė, bet paskola — irgi.",
       en: "Highest price and longest wait. The monthly benefit is larger, but so is the loan.",
@@ -212,16 +212,16 @@ const CONTRACTORS = [
     response: { lt: "Reakcija per 5 d. d.", en: "Five-working-day response" },
     billAfter: 138,
     exportIncome: 30,
-    flexFloor: 14,
+    flexAvg: 14,
     honest: {
-      lt: "Pigiausia įranga, bet mažas kaupiklis: mažesnė lankstumo garantija ir trumpesnis atsarginis maitinimas.",
-      en: "Cheapest hardware, smallest battery: a lower flexibility floor and less backup time.",
+      lt: "Pigiausia įranga, bet mažas kaupiklis: mažesnė lankstumo vertė ir trumpesnis atsarginis maitinimas.",
+      en: "Cheapest hardware, smallest battery: a lower flexibility value and less backup time.",
     },
   },
 ];
 
 const contractorById = (id) => CONTRACTORS.find((c) => c.id === id) || CONTRACTORS[0];
-const termByYears = (y) => TERMS.find((x) => x.years === y) || TERMS[1];
+const lenderById = (id) => LENDERS.find((x) => x.id === id) || LENDERS[0];
 
 /* ---------- derivation ---------- */
 
@@ -232,20 +232,21 @@ function instalment(price, years, rate) {
   return (price * r) / (1 - Math.pow(1 + r, -n));
 }
 
-/* The two figures the platform normalises every bundle down to: what leaves the
-   household each month, and what that is worth against doing nothing. */
-function quote(contractorId, years) {
+/* What leaves the household each month, and what that is worth against doing
+   nothing. The flexibility component is an average, so the total is too. */
+function quote(contractorId, lenderId) {
   const c = contractorById(contractorId);
-  const term = termByYears(years);
-  const loan = instalment(c.price, term.years, term.rate);
+  const lender = lenderById(lenderId);
+  const loan = instalment(c.price, LOAN_YEARS, lender.rate);
 
-  const monthly = c.billAfter + loan - c.exportIncome - c.flexFloor;
+  const monthly = c.billAfter + loan - c.exportIncome - c.flexAvg;
   const monthlySaving = PERSONA.currentMonthlyCost - monthly;
-  const totalRepaid = loan * term.years * 12;
+  const totalRepaid = loan * LOAN_YEARS * 12;
 
   return {
     contractor: c,
-    term,
+    lender,
+    years: LOAN_YEARS,
     loan,
     monthly,
     monthlySaving,
@@ -253,37 +254,44 @@ function quote(contractorId, years) {
     totalRepaid,
     interestPaid: totalRepaid - c.price,
     upfront: 0,
-    /* Flexibility above the floor is shared, so the floor is a minimum rather
-       than a cap. Shown as an illustrative good month on the final screen. */
-    flexFloorYear: c.flexFloor * 12,
-    warrantyGapYears: Math.max(0, term.years - c.warrantyBattery),
+  };
+}
+
+/* The same bundle bought outright: no instalment, so the monthly saving is as
+   large as it gets. The platform does not offer this route yet, and the card
+   exists to show what the financing costs in exchange for requiring no capital. */
+function upfrontQuote(contractorId) {
+  const c = contractorById(contractorId);
+  const monthly = c.billAfter - c.exportIncome - c.flexAvg;
+  return {
+    contractor: c,
+    upfront: c.price,
+    loan: 0,
+    monthly,
+    monthlySaving: PERSONA.currentMonthlyCost - monthly,
   };
 }
 
 /* Ordering for the marketplace: cheapest monthly first, which is deliberately
    not the same as cheapest hardware. */
-function rankedQuotes(years) {
-  return CONTRACTORS.map((c) => quote(c.id, years)).sort((a, b) => a.monthly - b.monthly);
+function rankedQuotes(lenderId) {
+  return CONTRACTORS.map((c) => quote(c.id, lenderId)).sort((a, b) => a.monthly - b.monthly);
 }
 
-function bestQuote(years) {
-  return rankedQuotes(years)[0];
+function bestQuote(lenderId) {
+  return rankedQuotes(lenderId)[0];
 }
 
-/* Illustrative aggregation state for the closing screen. Real BBCM
-   prequalification needs at least 1 MW per product per direction. */
-const POOL = {
-  assets: 168,
-  mw: 1.3,
-  thresholdMw: 1,
-};
+/* The same, bought outright — used by the second approach card. */
+function bestUpfrontQuote() {
+  return CONTRACTORS.map((c) => upfrontQuote(c.id)).sort((a, b) => a.monthly - b.monthly)[0];
+}
 
-/* One operating month, for the epilogue. January is the month the floor had to
-   catch something, which is the only reason a floor is worth having. */
+/* One operating month, for the epilogue. January is the month the market paid
+   little, which is what an average rather than a guarantee actually means. */
 const MONTH = {
   label: { lt: "2027 m. kovas", en: "March 2027" },
   kwhSupplied: 712,
-  cheapZoneShare: 81,
   nightsCharged: 26,
   nightsTotal: 31,
   dispatchEvents: 11,
