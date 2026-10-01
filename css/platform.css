@@ -1,0 +1,219 @@
+/* Platform demo — contractor variant.
+   Loaded after styles.css. Only the components the household mockup does not
+   already have: language switch, contractor marketplace, credit application,
+   the return-and-decision beat, checkout and pool status. Everything else
+   (cards, kit strip, breakdown rows, timeline, bill, choice cards, dcard)
+   is reused unchanged. */
+
+/* ---------- measure adjustments ---------- */
+
+/* Lithuanian runs longer than the English the base system was measured against,
+   so the hero headline needs a wider measure and the chrome a tighter gap. */
+.topbar { gap: 18px; }
+.brandtag { white-space: nowrap; }
+.hero h1 { max-width: 26ch; }
+.hero .bigfig { gap: 32px; }
+
+/* ---------- language switch ---------- */
+
+.langswitch {
+  display: flex; border: 1px solid var(--line-strong); border-radius: 999px;
+  overflow: hidden; flex: 0 0 auto;
+}
+.langbtn {
+  border: 0; background: var(--surface); padding: 7px 13px;
+  font-size: 12px; font-weight: 700; letter-spacing: .04em;
+  color: var(--navy-45); cursor: pointer;
+}
+.langbtn + .langbtn { border-left: 1px solid var(--line-strong); }
+.langbtn:hover { color: var(--navy); }
+.langbtn.on { background: var(--navy); color: #fff; }
+
+/* ---------- three-party strip ---------- */
+
+.roles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 26px; }
+.role {
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+  box-shadow: var(--shadow); padding: 18px 19px;
+}
+.role .ic3 {
+  width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center;
+  background: linear-gradient(150deg, rgba(0, 201, 183, .2), rgba(59, 82, 220, .18));
+  color: var(--navy); margin-bottom: 12px;
+}
+.role .who { font-size: 11px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: var(--navy-45); }
+.role b { display: block; font-size: 15.5px; margin: 3px 0 6px; }
+.role p { font-size: 13px; color: var(--navy-70); }
+
+/* ---------- contractor marketplace ---------- */
+
+.rangovai { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; align-items: start; }
+.rcard {
+  background: var(--surface); border: 1.5px solid var(--line); border-radius: var(--radius);
+  padding: 20px; cursor: pointer; position: relative; text-align: left;
+  display: flex; flex-direction: column; min-height: 100%;
+  transition: border-color .16s, box-shadow .16s, transform .16s;
+}
+.rcard:hover { border-color: var(--navy-45); }
+.rcard.sel { border-color: var(--navy); box-shadow: var(--shadow-lift); transform: translateY(-2px); }
+.rcard .badge {
+  position: absolute; top: -10px; left: 18px; font-size: 10.5px; font-weight: 700;
+  letter-spacing: .06em; text-transform: uppercase; padding: 3px 10px; border-radius: 999px;
+  background: linear-gradient(96deg, var(--teal), var(--cyan)); color: var(--navy-deep);
+}
+.rhead { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.rhead h3 { font-size: 18px; }
+.rhead .since { font-size: 12px; color: var(--navy-45); margin-top: 2px; }
+
+.stars { font-size: 12.5px; font-weight: 700; color: var(--navy); white-space: nowrap; }
+.stars em { font-style: normal; color: var(--warn); margin-right: 4px; }
+.stars span { display: block; font-weight: 400; font-size: 11px; color: var(--navy-45); text-align: right; }
+
+/* the two figures every bundle is normalised to, always in the same place */
+.rfig {
+  display: flex; gap: 22px; margin: 16px 0 2px; padding: 14px 15px;
+  border-radius: var(--radius-sm); background: #f7f9fd; border: 1px solid var(--line);
+}
+.rfig > div { min-width: 0; }
+.rfig .k { font-size: 10.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--navy-45); }
+.rfig .v { font-size: 25px; font-weight: 700; letter-spacing: -.025em; display: block; }
+.rfig .v small { font-size: 12.5px; font-weight: 500; color: var(--navy-45); letter-spacing: 0; }
+.rfig .good { color: var(--ok); }
+.rfig .bad { color: var(--bad); }
+
+.specs { list-style: none; margin: 14px 0 0; padding: 0; font-size: 13px; }
+.specs li { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-top: 1px solid var(--line); }
+.specs li:first-child { border-top: 0; }
+.specs .sk { color: var(--navy-45); }
+.specs .sv { font-weight: 600; text-align: right; }
+
+/* The base stylesheet hardcodes an English prefix here. Follow the document
+   language instead, which the LT/EN switch keeps in sync. */
+html[lang="lt"] .honest::before { content: "Atvirai: "; }
+html[lang="en"] .honest::before { content: "Honestly: "; }
+
+/* ---------- normalisation note ---------- */
+
+.sizing {
+  display: flex; gap: 16px; align-items: center; flex-wrap: wrap;
+  padding: 16px 18px; border-radius: var(--radius);
+  border: 1px dashed var(--line-strong); background: rgba(255, 255, 255, .7);
+}
+.sizing .sz { font-size: 21px; font-weight: 700; letter-spacing: -.02em; }
+.sizing p { font-size: 12.5px; color: var(--navy-45); margin: 0; }
+
+/* ---------- honest / dead-end panels ---------- */
+
+.honestpanel {
+  margin-top: 14px; padding: 16px 18px; border-radius: var(--radius);
+  border: 1px solid #f0dcc2; background: #fdf7ee; font-size: 13.5px; color: var(--navy-70);
+}
+.honestpanel b { display: block; font-size: 14.5px; color: var(--warn); margin-bottom: 5px; }
+
+.deadend {
+  margin-top: 16px; padding: 20px 22px; border-radius: var(--radius);
+  border: 1px solid #f6d2cf; background: #fdeeed;
+}
+.deadend b { display: block; font-size: 17px; color: var(--bad); margin-bottom: 6px; }
+.deadend p { font-size: 13.5px; color: var(--navy-70); }
+
+/* ---------- credit application ---------- */
+
+.fillrow {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  flex-wrap: wrap; margin-bottom: 18px; padding-bottom: 16px; border-bottom: 1px solid var(--line);
+}
+.fillrow p { font-size: 12.5px; color: var(--navy-45); margin: 0; max-width: 46ch; }
+.fillbtn {
+  border: 1.5px solid var(--blue); background: rgba(59, 82, 220, .07); color: var(--blue);
+  border-radius: 999px; padding: 9px 18px; font-size: 13px; font-weight: 650; cursor: pointer;
+  white-space: nowrap;
+}
+.fillbtn:hover { background: rgba(59, 82, 220, .13); }
+
+.form { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field.wide { grid-column: 1 / -1; }
+.field label { font-size: 12px; font-weight: 650; color: var(--navy-70); }
+.field .box {
+  border: 1px solid var(--line-strong); border-radius: var(--radius-sm);
+  padding: 11px 13px; font-size: 14px; background: #fbfcfe; min-height: 44px;
+  display: flex; align-items: center; color: var(--navy);
+}
+.field .box.empty { color: var(--navy-45); font-style: italic; background: var(--surface); }
+.field .box.filled { background: #f3f7ff; border-color: rgba(59, 82, 220, .35); }
+
+.sentto {
+  margin-top: 16px; font-size: 12.5px; color: var(--navy-45);
+  display: flex; gap: 9px; align-items: flex-start;
+}
+
+/* ---------- the time break ---------- */
+
+.timebreak {
+  text-align: center; padding: 34px 24px; border-radius: 20px;
+  background: linear-gradient(148deg, var(--navy-deep) 0%, var(--navy) 60%, #33418f 100%);
+  color: #fff; position: relative; overflow: hidden;
+}
+.timebreak::after {
+  content: ""; position: absolute; left: 50%; top: -140px; width: 420px; height: 420px;
+  transform: translateX(-50%);
+  background: radial-gradient(circle, rgba(15, 211, 222, .35), transparent 62%);
+}
+.timebreak > * { position: relative; z-index: 1; }
+.timebreak .el {
+  font-size: 11.5px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--cyan); margin-bottom: 14px;
+}
+.timebreak h1 { font-size: 30px; }
+.timebreak p { font-size: 15px; color: rgba(255, 255, 255, .78); margin: 12px auto 0; max-width: 46ch; }
+
+.decision {
+  margin-top: 14px; border: 1.5px solid #cdeee6; background: #eefaf7;
+  border-radius: var(--radius); padding: 22px;
+}
+.decision .ok {
+  display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700;
+  letter-spacing: .06em; text-transform: uppercase; color: var(--ok);
+  background: #fff; border: 1px solid #cdeee6; border-radius: 999px; padding: 5px 13px;
+}
+.decision h2 { margin: 14px 0 4px; }
+.decision .by { font-size: 13px; color: var(--navy-70); }
+
+/* ---------- checkout ---------- */
+
+.duetoday {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 18px;
+  flex-wrap: wrap; padding: 22px 24px; border-radius: var(--radius);
+  background: var(--navy); color: #fff; margin-top: 14px;
+}
+.duetoday .k { font-size: 12px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: rgba(255, 255, 255, .6); }
+.duetoday .v { font-size: 42px; font-weight: 700; letter-spacing: -.03em; display: block; }
+.duetoday .then { font-size: 13.5px; color: rgba(255, 255, 255, .78); text-align: right; max-width: 34ch; }
+
+.agreements { list-style: none; margin: 0; padding: 0; counter-reset: ag; }
+.agreements li {
+  display: flex; gap: 14px; padding: 14px 0; border-top: 1px solid var(--line);
+}
+.agreements li:first-child { border-top: 0; padding-top: 2px; }
+.agreements li::before {
+  counter-increment: ag; content: counter(ag);
+  flex: 0 0 26px; height: 26px; border-radius: 50%; display: grid; place-items: center;
+  background: #eef1f9; color: var(--navy-70); font-size: 12.5px; font-weight: 700;
+}
+.agreements b { display: block; font-size: 14.5px; }
+.agreements span { display: block; font-size: 12.5px; color: var(--navy-45); }
+.agreements .with { font-size: 12px; font-weight: 650; color: var(--blue); margin: 1px 0 3px; }
+
+/* ---------- pool status ---------- */
+
+.pool { margin-top: 14px; }
+.poolbar {
+  height: 10px; border-radius: 999px; background: var(--line); overflow: hidden; margin: 12px 0 8px;
+}
+.poolbar i { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--teal), var(--cyan)); }
+.poolnote { display: flex; justify-content: space-between; font-size: 12px; color: var(--navy-45); }
+
+@media (max-width: 1180px) {
+  .rangovai, .roles, .form { grid-template-columns: 1fr; }
+}

@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="lt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ignitis platforma — kaupiklis be pradinio įnašo (maketas)</title>
+<link rel="icon" href="assets/ignitis-mark.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css?v=3">
+<link rel="stylesheet" href="css/platform.css?v=1">
+</head>
+<body>
+
+<div class="app" id="app">
+
+  <header class="topbar">
+    <img src="assets/ignitis-logo.png" alt="Ignitis">
+    <div class="brandrule"></div>
+    <div class="brandtag" id="brandtag">Platforma · koncepcijos maketas</div>
+    <nav class="steps" id="steps" aria-label="Eiga"></nav>
+    <div class="langswitch" id="langswitch" role="group" aria-label="Kalba">
+      <button class="langbtn on" data-lang="lt">LT</button>
+      <button class="langbtn" data-lang="en">EN</button>
+    </div>
+    <button class="topbtn" id="railBtn">Slėpti pagalbininką</button>
+    <button class="topbtn" id="resetBtn">Pradėti iš naujo</button>
+  </header>
+
+  <main class="stage" id="stage"></main>
+
+  <footer class="footbar">
+    <div class="footnote" id="footnote"></div>
+    <button class="btn ghost" id="backBtn">Atgal</button>
+    <button class="btn" id="nextBtn">Tęsti</button>
+  </footer>
+
+  <aside class="rail">
+    <div class="railhead">
+      <img src="assets/ignitis-mark.png" alt="">
+      <div><b id="agentName">Ignitis pagalbininkas</b><span id="agentRole"></span></div>
+    </div>
+    <div class="railbody" id="railBody"></div>
+    <div class="asks" id="asks"></div>
+  </aside>
+
+</div>
+
+<script src="js/platform-model.js?v=1"></script>
+<script src="js/platform-app.js?v=1"></script>
+</body>
+</html>
