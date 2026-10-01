@@ -80,13 +80,23 @@ const FLEX = {
   reserveHours: 9,
 };
 
+/* Financing partners on the platform. The three Baltic retail banks the
+   mockup compares; each term below picks the best offer from this set. */
+const PARTNERS = [
+  { id: "seb", name: "SEB", logo: "assets/partners/seb.png" },
+  { id: "luminor", name: "Luminor", logo: "assets/partners/luminor.png" },
+  { id: "swedbank", name: "Swedbank", logo: "assets/partners/swedbank.png" },
+];
+
+const partnerById = (id) => PARTNERS.find((p) => p.id === id) || PARTNERS[0];
+
 /* Point-of-sale loan. Zero upfront on every term — that is the whole offer.
    The platform shows the best partner offer per term rather than one lender. */
 const TERMS = [
   {
     years: 5,
     rate: 0.045,
-    partner: "Nordkreditas",
+    partnerId: "seb",
     note: {
       lt: "Mažiausiai palūkanų, bet įmoka viršija dabartinę sąskaitą.",
       en: "Least interest paid, but the instalment exceeds the current bill.",
@@ -95,7 +105,7 @@ const TERMS = [
   {
     years: 10,
     rate: 0.05,
-    partner: "Finansų Tiltas",
+    partnerId: "luminor",
     note: {
       lt: "Įmoka telpa į dabartinę sąskaitą ir baigiasi kartu su kaupiklio garantija.",
       en: "The instalment fits inside the current bill and ends with the battery warranty.",
@@ -104,15 +114,18 @@ const TERMS = [
   {
     years: 15,
     rate: 0.056,
-    partner: "Finansų Tiltas",
+    partnerId: "swedbank",
     note: {
       lt: "Mažiausia mėnesio įmoka, bet 15 metų ilgiau nei įrangos garantija.",
       en: "Lowest monthly cost, but fifteen years outlives the equipment warranty.",
     },
   },
-];
+].map((term) => {
+  const partner = partnerById(term.partnerId);
+  return { ...term, partner: partner.name, partnerLogo: partner.logo };
+});
 
-const PARTNER_COUNT = 3;   // how many financing partners the platform compared
+const PARTNER_COUNT = PARTNERS.length;
 
 /* Four contractors, each quoting its own hardware. This is the defining feature
    of the contractor variant: the bundles are not comparable as specifications,
@@ -125,6 +138,7 @@ const CONTRACTORS = [
   {
     id: "sg",
     name: "Saulės Grąža",
+    logo: "assets/contractors/saules-graza.png",
     since: 2016,
     installs: 1840,
     rating: 4.6,
@@ -149,6 +163,7 @@ const CONTRACTORS = [
   {
     id: "ev",
     name: "Energijos Vartai",
+    logo: "assets/contractors/energijos-vartai.png",
     since: 2019,
     installs: 610,
     rating: 4.3,
@@ -173,6 +188,7 @@ const CONTRACTORS = [
   {
     id: "bs",
     name: "Baltijos Saulė",
+    logo: "assets/contractors/baltijos-saule.png",
     since: 2013,
     installs: 3270,
     rating: 4.8,
@@ -197,6 +213,7 @@ const CONTRACTORS = [
   {
     id: "zj",
     name: "Žalia Jėga",
+    logo: "assets/contractors/zalia-jega.png",
     since: 2021,
     installs: 240,
     rating: 4.1,
