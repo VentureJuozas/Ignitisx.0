@@ -300,7 +300,7 @@ const SCENARIOS = {
   },
   addon: {
     id: "addon",
-    label: { lt: "Kaupiklio prieaugis (PV jau yra)", en: "Battery add-on (PV already there)" },
+    label: { lt: "Tik kaupiklis (PV jau yra)", en: "Battery add-on (PV already there)" },
     blurb: {
       lt: "Saulės elektrinė ir inverteris jau stovi. Rangovas prideda tik 11,52 kWh kaupiklį. Vartojimas — 7 000 kWh/metus.",
       en: "The array and inverter are already in. The contractor adds only an 11.52 kWh battery. Consumption is 7,000 kWh/yr.",
