@@ -242,7 +242,7 @@ const SCREENS = [
       ["chart", t({ lt: `${PERSONA.consumption.toLocaleString(LANG.current === "lt" ? "lt-LT" : "en-IE")} kWh/metus`,
                     en: `${PERSONA.consumption.toLocaleString("en-IE")} kWh/yr` }),
         t({ lt: "Visas namų ūkio vartojimas", en: "Total household consumption" })],
-      ["card", t({ lt: `~${EUR(PERSONA.currentMonthlyCost)}/mėn.`, en: `~${EUR(PERSONA.currentMonthlyCost)}/mo` }),
+      ["card", t({ lt: `~${EUR(140)}/mėn.`, en: `~${EUR(140)}/mo` }),
         t({ lt: "Vidutinė elektros sąskaita", en: "Average electricity bill" })],
       PERSONA.hasSolar
         ? ["solar", t({ lt: "Saulės elektrinė jau yra", en: "Solar array already in" }),
