@@ -140,28 +140,51 @@ function prevIndex(i) {
 }
 
 
-/* Where the monthly figure comes from. Four lines, a total, and then the
-   comparison that actually matters: the current bill and the difference. */
+/* Where the monthly figure comes from. Electricity components (purchased /
+   export / flexibility) are shown as separate rows so the net billAfter line
+   is readable; export and flex annuals are converted to monthly equivalents.
+   Those components are informational — billAfter is already net of them.
+   Then loan (if financed), total, current bill, and saving. */
 function breakdown(q) {
   const c = q.contractor;
   const financed = Boolean(q.lender);
+  const exportMonthly = c.exportAnnual / 12;
+  const flexMonthly = c.flexAnnual / 12;
+
+  /* cls: "" | "detail" | "sub" — detail rows explain the net; only sub + loan
+     count toward the monthly total visually. credit paints the value green. */
   const rows = [
+    [t({ lt: "Įsigyjama elektra", en: "Purchased electricity" }),
+     t({ lt: "Tinklo pirkimai po PV ir kaupiklio savartojimo",
+         en: "Grid imports after PV and battery self-use" }),
+     c.purchasedElectricity, false, "detail"],
+    [t({ lt: "Eksporto kreditas", en: "Export credit" }),
+     t({ lt: `${EUR(c.exportAnnual)}/metus → mėnesio ekvivalentas — jau įskaičiuota`,
+         en: `${EUR(c.exportAnnual)}/yr → monthly equivalent — already included` }),
+     -exportMonthly, true, "detail"],
+    [t({ lt: "Lankstumo dalis", en: "Flexibility share" }),
+     t({ lt: `${EUR(c.flexAnnual)}/metus → mėnesio ekvivalentas — jau įskaičiuota`,
+         en: `${EUR(c.flexAnnual)}/yr → monthly equivalent — already included` }),
+     -flexMonthly, true, "detail"],
     [t({ lt: "Elektra su PV + kaupikliu", en: "Electricity with PV + battery" }),
-     t({
-       lt: `Įsigyjama elektra ~${EUR(c.purchasedElectricity)}/mėn.; eksportas ${EUR(c.exportAnnual)}/metus; lankstumas ${EUR(c.flexAnnual)}/metus — jau įskaičiuota`,
-       en: `Purchased power ~${EUR(c.purchasedElectricity)}/mo; export ${EUR(c.exportAnnual)}/yr; flexibility ${EUR(c.flexAnnual)}/yr — already netted in` }),
-     c.billAfter, false],
+     t({ lt: "Grynoji elektros eilutė — eksportas ir lankstumas jau įskaičiuoti",
+         en: "Net electricity line — export and flexibility already included" }),
+     c.billAfter, false, "sub"],
   ];
   if (financed) {
     rows.push([t({ lt: `Paskolos įmoka · ${q.lender.name}`, en: `Loan instalment · ${q.lender.name}` }),
       t({ lt: `${q.years} ${YEARS(q.years)}, ${NUM(q.lender.rate * 100, 1)} % metinės palūkanos, 0 € pradinis įnašas`,
          en: `${q.years} years at ${NUM(q.lender.rate * 100, 1)}%, zero upfront` }),
-      q.loan, false]);
+      q.loan, false, ""]);
   }
 
   const todayEm = SCENARIO.id === "addon"
     ? t({ lt: "Su esama saulės elektrine, be kaupiklio", en: "With the existing array, without a battery" })
     : t({ lt: "Be saulės elektrinės, be kaupiklio", en: "No array, no battery" });
+
+  const rowHtml = ([l, basis, v, credit, cls]) => `
+      <div class="brk${cls ? ` ${cls}` : ""}"><div class="l">${l}<em>${basis}</em></div>
+      <div class="v mono"${credit ? ' style="color:var(--ok)"' : ""}>${v < 0 ? "−" : ""}${EUR(Math.abs(v), 2)}</div></div>`;
 
   return `<div class="card stack">
     <h3>${t({ lt: "Iš ko susideda mėnesio suma", en: "What the monthly figure is made of" })}</h3>
@@ -169,12 +192,10 @@ function breakdown(q) {
       ${c.name}${financed ? ` · ${q.lender.name} · ${q.years} ${t({ lt: "metų terminas", en: "year term" })}` : ` · ${t({ lt: "pirkimas iš karto", en: "bought outright" })}`}.
       ${t({ lt: "Perskaičiuojama iškart.", en: "Recalculated live." })}
     </p>
-    ${rows.map(([l, basis, v, credit]) => `
-      <div class="brk"><div class="l">${l}<em>${basis}</em></div>
-      <div class="v mono" ${credit ? 'style="color:var(--ok)"' : ""}>${v < 0 ? "−" : ""}${EUR(Math.abs(v), 2)}</div></div>`).join("")}
+    ${rows.map(rowHtml).join("")}
     <div class="brk total"><div class="l">${t({ lt: "Iš viso per mėnesį", en: "Total per month" })}
       <em>${financed
-        ? t({ lt: "Kol mokama paskola — vėliau lieka tik elektra", en: "While the loan runs — afterwards only electricity remains" })
+        ? t({ lt: "Elektra + paskola — kol mokama paskola", en: "Electricity + loan — while the loan runs" })
         : t({ lt: "Be paskolos — tik elektra su sistema", en: "No loan — electricity with the system only" })}</em></div>
       <div class="v mono">${EUR(q.monthly, 2)}</div></div>
     <div class="brk"><div class="l">${t({ lt: "Dabartinė elektros sąskaita", en: "Your electricity bill today" })}
