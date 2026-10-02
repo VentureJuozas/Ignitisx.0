@@ -235,8 +235,6 @@ const SCREENS = [
         <div class="afig" style="margin-top:12px">
           <div><span class="k">${t({ lt: "Bazinė kaina", en: "Baseline price" })}</span>
             <span class="v mono">${EUR(sc.contractors[0].price)}</span></div>
-          <div><span class="k">${t({ lt: "Sąskaita šiandien", en: "Bill today" })}</span>
-            <span class="v mono">${EUR(sc.persona.currentMonthlyCost)}<small>/${t({ lt: "mėn.", en: "mo" })}</small></span></div>
         </div>
       </button>`).join("");
 
@@ -266,9 +264,7 @@ const SCREENS = [
         lt: "Du keliai per tą pačią platformą. Skiriasi įranga, kaina ir namų ūkio sąskaita.",
         en: "Two paths through the same platform. Hardware, price and the household bill differ." })}</p>
 
-      <div class="approach stack">${scenarioCards}</div>
-
-      <div class="card stack" style="margin-top:22px">
+      <div class="card stack">
         <div class="pcard">
           <div class="pavatar"><img src="assets/ignitis-mark.png" alt=""></div>
           <div>
@@ -277,7 +273,9 @@ const SCREENS = [
           </div>
         </div>
         <div class="factgrid factgrid-4">${facts}</div>
-      </div>`;
+      </div>
+
+      <div class="approach stack" style="margin-top:22px">${scenarioCards}</div>`;
   },
 },
 
