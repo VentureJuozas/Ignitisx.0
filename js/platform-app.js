@@ -1149,7 +1149,23 @@ const SCREENS = [
           ? `${c.name} · ${hwLabel(c)} · ${q.lender.name}, ${q.years} years · ${EUR(q.monthly)} a month.`
           : `${c.name} · ${hwLabel(c)} · bought outright · ${EUR(q.monthly)} a month.` })}</p>
 
-      <div class="card stack"><ul class="timeline">${steps}</ul></div>`;
+      <div class="card stack"><ul class="timeline">${steps}</ul></div>
+
+      <div class="card">
+        <h3 style="display:flex;align-items:center;gap:9px">
+          ${contractorLogo(c, "brandlogo contractor inline")}
+          ${t({ lt: "Jūsų kontaktas yra rangovas, ne skambučių centras", en: "Your contact is the contractor, not a call centre" })}</h3>
+        <p style="font-size:13.5px;color:var(--navy-70);margin-top:8px">${t({
+          lt: `Mindaugas, „${c.name}“ montavimo vadovas. Jo numeris bus programėlėje nuo rytojaus. ${t(c.response)} pagal sutartį — jei nesilaikoma, kreipiatės į platformą ir terminą sekame mes.`,
+          en: `Mindaugas, installation lead at ${c.name}. His number is in the app from tomorrow. ${t(c.response)} under contract — if that slips, you come to the platform and we chase it.` })}</p>
+      </div>
+
+      <div class="honestpanel">
+        <b>${t({ lt: "Parama atitenka Jums, ne Ignitis", en: "Any support goes to you, not to Ignitis" })}</b>
+        ${t({
+          lt: "Kadangi įranga nuo pirmos dienos yra Jūsų, valstybės paramos gavėjas esate Jūs. Modelyje, kuriame kaupiklį finansuotų Ignitis, parama būtų skirta juridiniam asmeniui — čia tokios problemos nėra.",
+          en: "Because the equipment is yours from day one, you are the recipient of any state support. In a model where Ignitis financed the battery, the support would go to a company instead — here that problem does not arise." })}
+      </div>`;
   },
 },
 
@@ -1158,30 +1174,30 @@ const SCREENS = [
   label: { lt: "Po pusmečio", en: "Six months on" },
   next: { lt: "Pradėti iš naujo", en: "Restart the demo" },
   role: { lt: "Valdau Jūsų kaupiklį", en: "Operating your battery" },
-  foot: { lt: "Vienintelis ekranas, rodantis ryšį, o ne sandorį. Čia matoma, kad pasidalijimas tikrai veikia.",
-          en: "The only screen showing a relationship rather than a transaction, and the one where the split is visibly real." },
+  foot: { lt: "Vienintelis ekranas, rodantis ryšį, o ne sandorį. Čia matoma, kad dalijimasis verte tikrai veikia.",
+          en: "The only screen showing a relationship rather than a transaction, and the one where sharing the value is visibly real." },
   agent: [
     { lt: "Kovas. Kaupiklį kroviau pigiomis nakties zonomis 26 naktis iš 31, o rinkoje jis uždirbo daugiau nei vidutinį mėnesį.",
       en: "March. I charged the battery in the cheap night zones on 26 of 31 nights, and in the market it earned more than an average month." },
-    { lt: "Į sąskaitą įskaityta lygiai pusė to, ką jis uždirbo. Sausį uždirbo gerokai mažiau — ir tada įskaityta buvo irgi pusė, tik mažesnė.",
-      en: "Exactly half of what it earned is credited to the invoice. In January it earned considerably less — and half was credited then too, just a smaller half." },
+    { lt: "Į sąskaitą įskaityta Jūsų dalis to, ką jis uždirbo. Sausį uždirbo gerokai mažiau — ir tada įskaityta buvo irgi Jūsų dalis, tik mažesnė.",
+      en: "Your share of what it earned is credited to the invoice. In January it earned considerably less — and your share was credited then too, just a smaller one." },
   ],
   asks: [
     [{ lt: "Kodėl turėčiau atidaryti šią programėlę?", en: "Why would I open this app?" },
-     { lt: "Nes čia yra skaičius, kuris kiekvieną mėnesį keičiasi ir kurio pusė yra Jūsų. Tai sąžiningas atsakymas — gražesnė sąsaja Jūsų nesugrąžintų.",
-       en: "Because there is a number here that changes every month and half of it is yours. That is the honest answer — a nicer interface would not bring you back." }],
+     { lt: "Nes čia yra skaičius, kuris kiekvieną mėnesį keičiasi ir kurio dalis yra Jūsų. Tai sąžiningas atsakymas — gražesnė sąsaja Jūsų nesugrąžintų.",
+       en: "Because there is a number here that changes every month and a share of it is yours. That is the honest answer — a nicer interface would not bring you back." }],
     [{ lt: "Parodykite penkias naktis, kai nekrovėte", en: "Show me the five nights you didn't charge" },
      { lt: "Kovo 3, 9, 17, 24 ir 29 d. — tomis naktimis skirtumas tarp zonų buvo mažesnis už kaupiklio nusidėvėjimo kaštus. Krauti būtų kainavę daugiau, nei uždirbę, todėl palikau ramybėje.",
        en: "3, 9, 17, 24 and 29 March — on those nights the zone spread was below the battery's degradation cost. Charging would have cost more than it earned, so I left it alone." }],
     [{ lt: "Kiek uždirbote Jūs, o ne aš?", en: "What did you earn, as opposed to me?" },
-     { lt: `Tiek pat, kiek ir Jūs — pusiau. Rodome bendrą sumą būtent todėl, kad „uždirbate iš mano įrangos“ yra tas prieštaravimas, kuris šį produktą užmuša, jei jo nepaaiškini.`,
-       en: `Exactly what you did — we split it. We show the gross figure precisely because "you are making money from my equipment" is the objection that kills this product if left unanswered.` }],
+     { lt: "Dalijamės uždirbtą vertę. Rodome bendrą sumą būtent todėl, kad „uždirbate iš mano įrangos“ yra tas prieštaravimas, kuris šį produktą užmuša, jei jo nepaaiškini.",
+       en: "We share the value we create. We show the gross figure precisely because \"you are making money from my equipment\" is the objection that kills this product if left unanswered." }],
   ],
   render: () => {
     const q = activeQuote();
     const c = q.contractor;
 
-    /* A good month: the market paid well, so the customer's half is above the
+    /* A good month: the market paid well, so the customer's share is above the
        average quoted at checkout. January is named to show it cuts both ways. */
     const flexGross = Math.round(MONTH.flexGross * (c.battery / 16));
     const credited = Math.round(flexGross * FLEX.share);
@@ -1221,14 +1237,14 @@ const SCREENS = [
           <div class="billrow credit"><span>${t({ lt: "Į tinklą atiduota saulės energija", en: "Solar exported to the grid" })}</span>
             <span class="mono">−${EUR((c.exportAnnual / 12), 2)}</span></div>
           <div class="billrow credit"><span>${t({
-            lt: `Lankstumo pajamų dalis — uždirbta ${EUR(flexGross)}, Jums ${Math.round(FLEX.share * 100)} %`,
-            en: `Your share of flexibility revenue — ${EUR(flexGross)} earned, ${Math.round(FLEX.share * 100)}% yours` })}</span>
+            lt: `Lankstumo pajamų dalis — uždirbta ${EUR(flexGross)}`,
+            en: `Your share of flexibility revenue — ${EUR(flexGross)} earned` })}</span>
             <span class="mono">−${EUR(credited, 2)}</span></div>
           <div class="billrow foot"><span>${t({ lt: "Iš viso", en: "Total" })}</span><span class="mono">${EUR(total, 2)}</span></div>
         </div>
         <p style="font-size:13px;color:var(--navy-45);margin-top:14px">${t({
-          lt: `Pasirašant skaičiavome vidutiniškai ${EUR((c.flexAnnual / 12))}/mėn. Šis mėnuo buvo geresnis: rinkoje uždirbta ${EUR(flexGross)}, todėl Jūsų pusė — ${EUR(credited)}. Sausį kaupiklis uždirbo tik ${EUR(MONTH.previousMonth.earned)}, ir tą mėnesį Jums atiteko ${EUR(Math.round(MONTH.previousMonth.earned * FLEX.share))}. Pasidalijimas visada tas pats; suma kinta.`,
-          en: `At signing we quoted an average of ${EUR((c.flexAnnual / 12))}/month. This month was better: ${EUR(flexGross)} was earned in the market, so your half came to ${EUR(credited)}. In January the battery earned only ${EUR(MONTH.previousMonth.earned)}, and your share that month was ${EUR(Math.round(MONTH.previousMonth.earned * FLEX.share))}. The split never changes; the amount does.` })}</p>
+          lt: `Pasirašant skaičiavome vidutiniškai ${EUR((c.flexAnnual / 12))}/mėn. Šis mėnuo buvo geresnis: rinkoje uždirbta ${EUR(flexGross)}, todėl Jūsų dalis — ${EUR(credited)}. Sausį kaupiklis uždirbo tik ${EUR(MONTH.previousMonth.earned)}, ir tą mėnesį Jums atiteko ${EUR(Math.round(MONTH.previousMonth.earned * FLEX.share))}. Pasidalijimas visada tas pats; suma kinta.`,
+          en: `At signing we quoted an average of ${EUR((c.flexAnnual / 12))}/month. This month was better: ${EUR(flexGross)} was earned in the market, so your share came to ${EUR(credited)}. In January the battery earned only ${EUR(MONTH.previousMonth.earned)}, and your share that month was ${EUR(Math.round(MONTH.previousMonth.earned * FLEX.share))}. The sharing arrangement never changes; the amount does.` })}</p>
       </div>
 
       <div class="card">
