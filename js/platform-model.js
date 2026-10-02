@@ -107,10 +107,6 @@ const FULL_CONTRACTORS = [
     purchasedElectricity: 84,
     exportAnnual: 30,
     flexAnnual: 15,
-    honest: {
-      lt: "Bazinis platformos komplektas pagal realų atvejį — 7,3 kW PV · 11,52 kWh kaupiklis · 10 kW inverteris už 7 995 €.",
-      en: "The platform baseline from the live case — 7.3 kW PV · 11.52 kWh battery · 10 kW inverter at €7,995.",
-    },
   }),
   contractorShell({
     id: "ev",
@@ -132,10 +128,6 @@ const FULL_CONTRACTORS = [
     exportAnnual: 28,
     flexAnnual: 14,
     response: { lt: "Reakcija per 72 val.", en: "72-hour response" },
-    honest: {
-      lt: "Ta pati galia, brangesnė įranga ir montavimas — mėnesio įmoka didesnė nei bazinio komplekto.",
-      en: "Same capacity, dearer hardware and install — a higher instalment than the baseline.",
-    },
   }),
   contractorShell({
     id: "bs",
@@ -157,10 +149,6 @@ const FULL_CONTRACTORS = [
     exportAnnual: 34,
     flexAnnual: 18,
     response: { lt: "Reakcija per 24 val.", en: "24-hour response" },
-    honest: {
-      lt: "Didesnis kaupiklis ir geresnė elektros sąskaita, bet paskola pastebimai brangesnė.",
-      en: "A larger battery and a better electricity bill, but a noticeably dearer loan.",
-    },
   }),
   contractorShell({
     id: "zj",
@@ -182,10 +170,6 @@ const FULL_CONTRACTORS = [
     exportAnnual: 26,
     flexAnnual: 12,
     response: { lt: "Reakcija per 5 d. d.", en: "Five-working-day response" },
-    honest: {
-      lt: "Brangesnė nei bazinis komplektas, o kaupiklis mažesnis — lankstumo vertė silpnesnė.",
-      en: "Dearer than the baseline with a smaller battery — weaker flexibility value.",
-    },
   }),
 ];
 
@@ -203,10 +187,6 @@ const ADDON_CONTRACTORS = [
     purchasedElectricity: 62,
     exportAnnual: 22,
     flexAnnual: 15,
-    honest: {
-      lt: "Tik kaupiklis prie Jūsų esamos 7,3 kW elektrinės — 3 565 € papildomai.",
-      en: "Battery only, beside your existing 7.3 kW array — €3,565 extra.",
-    },
   }),
   contractorShell({
     id: "ev",
@@ -228,10 +208,6 @@ const ADDON_CONTRACTORS = [
     exportAnnual: 20,
     flexAnnual: 14,
     response: { lt: "Reakcija per 72 val.", en: "72-hour response" },
-    honest: {
-      lt: "Tas pats 11,52 kWh kaupiklis, bet montavimas ir garantija kainuoja daugiau.",
-      en: "The same 11.52 kWh battery, but install and warranty cost more.",
-    },
   }),
   contractorShell({
     id: "bs",
@@ -253,10 +229,6 @@ const ADDON_CONTRACTORS = [
     exportAnnual: 24,
     flexAnnual: 18,
     response: { lt: "Reakcija per 24 val.", en: "24-hour response" },
-    honest: {
-      lt: "Didesnis kaupiklis duoda daugiau, bet prieaugio kaina — didžiausia platformoje.",
-      en: "A larger battery earns more, but the add-on price is the highest on the platform.",
-    },
   }),
   contractorShell({
     id: "zj",
@@ -278,10 +250,6 @@ const ADDON_CONTRACTORS = [
     exportAnnual: 18,
     flexAnnual: 12,
     response: { lt: "Reakcija per 5 d. d.", en: "Five-working-day response" },
-    honest: {
-      lt: "Brangesnė nei bazinis prieaugis, o kaupiklis mažesnis.",
-      en: "Dearer than the baseline add-on, with a smaller battery.",
-    },
   }),
 ];
 

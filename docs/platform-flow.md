@@ -124,7 +124,7 @@ variant, and it is also why the residual-value test in the decision map is faile
 *The only screen the customer never sees. Read it out before starting.*
 
 - Persona card: name, age, detached house, household size, weekday occupancy.
-- Four facts and nothing else: 10,000 kWh/yr, around €200/month average bill, an air-to-water heat
+- Four facts and nothing else: 7,000 kWh/yr, around €140/month average bill, an air-to-water heat
   pump, and an EV charged at home in the evening. No solar and no battery — their absence is the
   premise, so it is not spelled out as a cell.
 
@@ -152,8 +152,6 @@ variant, and it is also why the residual-value test in the decision map is faile
 - Two normalised figures per card in a fixed position: monthly cost and estimated annual benefit.
 - A two-tile hardware strip per bundle — the array and the battery, which is all the contractor
   supplies. The full specification stays in the list below it.
-- An honest line per card naming its weakest point.
-
 > The teaching point: the cheapest hardware is **not** the cheapest monthly cost. A bigger battery
 > earns a larger average flexibility value, so the most expensive bundle has the lowest net monthly
 > figure. Normalisation is the platform's actual product here.
