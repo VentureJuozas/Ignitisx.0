@@ -155,8 +155,8 @@ function breakdown(q) {
      count toward the monthly total visually. credit paints the value green. */
   const rows = [
     [t({ lt: "Įsigyjama elektra", en: "Purchased electricity" }),
-     t({ lt: "Tinklo pirkimai po PV ir kaupiklio savartojimo",
-         en: "Grid imports after PV and battery self-use" }),
+     t({ lt: "Likę tinklo pirkimai su PV ir kaupikliu",
+         en: "Remaining grid imports with PV and battery" }),
      c.purchasedElectricity, false, "detail"],
     [t({ lt: "Eksporto kreditas", en: "Export credit" }),
      t({ lt: `${EUR(c.exportAnnual)}/metus → mėnesio ekvivalentas — jau įskaičiuota`,
