@@ -57,7 +57,7 @@ const LENDERS = [
   {
     id: "luminor",
     name: "Luminor",
-    logo: "assets/partners/luminor.png",
+    logo: "assets/partners/luminor.png?v=2",
     rate: 0.057,
     note: {
       lt: "Priima paraiškas ir su esamais įsipareigojimais, bet norma didesnė.",
