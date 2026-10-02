@@ -147,7 +147,7 @@ function breakdown(q) {
   const c = q.contractor;
   const financed = Boolean(q.lender);
 
-  /* cls: "" | "sub" — energy + loan feed the total; credit paints the value green. */
+  /* Energy (+ loan if financed) feed the total; credit paints the value green. */
   const rows = [
     [t({ lt: "Elektra su PV + kaupikliu", en: "Electricity with PV + battery" }),
      t({ lt: "(lankstumo vertė jau įskaičiuota)",
