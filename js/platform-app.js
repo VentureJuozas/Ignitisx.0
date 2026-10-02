@@ -1149,23 +1149,7 @@ const SCREENS = [
           ? `${c.name} · ${hwLabel(c)} · ${q.lender.name}, ${q.years} years · ${EUR(q.monthly)} a month.`
           : `${c.name} · ${hwLabel(c)} · bought outright · ${EUR(q.monthly)} a month.` })}</p>
 
-      <div class="card stack"><ul class="timeline">${steps}</ul></div>
-
-      <div class="card">
-        <h3 style="display:flex;align-items:center;gap:9px">
-          ${contractorLogo(c, "brandlogo contractor inline")}
-          ${t({ lt: "Jūsų kontaktas yra rangovas, ne skambučių centras", en: "Your contact is the contractor, not a call centre" })}</h3>
-        <p style="font-size:13.5px;color:var(--navy-70);margin-top:8px">${t({
-          lt: `Mindaugas, „${c.name}“ montavimo vadovas. Jo numeris bus programėlėje nuo rytojaus. ${t(c.response)} pagal sutartį — jei nesilaikoma, kreipiatės į platformą ir terminą sekame mes.`,
-          en: `Mindaugas, installation lead at ${c.name}. His number is in the app from tomorrow. ${t(c.response)} under contract — if that slips, you come to the platform and we chase it.` })}</p>
-      </div>
-
-      <div class="honestpanel">
-        <b>${t({ lt: "Parama atitenka Jums, ne Ignitis", en: "Any support goes to you, not to Ignitis" })}</b>
-        ${t({
-          lt: "Kadangi įranga nuo pirmos dienos yra Jūsų, valstybės paramos gavėjas esate Jūs. Modelyje, kuriame kaupiklį finansuotų Ignitis, parama būtų skirta juridiniam asmeniui — čia tokios problemos nėra.",
-          en: "Because the equipment is yours from day one, you are the recipient of any state support. In a model where Ignitis financed the battery, the support would go to a company instead — here that problem does not arise." })}
-      </div>`;
+      <div class="card stack"><ul class="timeline">${steps}</ul></div>`;
   },
 },
 
