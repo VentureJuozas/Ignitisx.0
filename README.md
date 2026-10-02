@@ -151,7 +151,7 @@ Then open <http://127.0.0.1:4321/platform.html>.
 Full per-screen element list and the two flow diagrams are in
 [docs/platform-flow.md](docs/platform-flow.md).
 
-0. **Profilis** — the persona in four facts: 10,000 kWh/yr, around €200/month, an air-to-water heat
+0. **Profilis** — the persona in four facts: 7,000 kWh/yr, around €140/month, an air-to-water heat
    pump and an EV charged at home. No solar and no battery, which is the premise.
 1. **Galimybė** — save around €38 a month without spending a euro, and all three parties named on the
    first screen.
@@ -159,7 +159,7 @@ Full per-screen element list and the two flow diagrams are in
    quoting *their own* bundles, normalised to monthly cost and annual benefit.
 3. **Finansavimas** — three financing partners, all ten years with zero upfront. The rate and the
    decision speed are what differ.
-4. **Lankstumas** — the mandatory dispatch gate, with the revenue share stated as a percentage.
+4. **Lankstumas** — the mandatory dispatch gate, with shared-value language (no fixed %).
    Declining produces a dead end, not a worse price.
 5. **Paraiška** — the credit application at the named provider, filled by a button, flagged as the
    last step on the customer's side.
@@ -167,7 +167,7 @@ Full per-screen element list and the two flow diagrams are in
 7. **Sprendimas** — the time break. Two days pass, then the decision is waiting.
 8. **Atsiskaitymas** — €0.00 due today, who does what, and everything routed through savitarna.
 9. **Montavimas** — survey, install, commissioning, and the first combined invoice.
-10. **Po pusmečio** — the invoice, with the gross market revenue and the customer's half side by side.
+10. **Po pusmečio** — the invoice, with gross market revenue and the amount credited to the customer.
 
 ## What actually argues the strategy
 
