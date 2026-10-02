@@ -277,12 +277,6 @@ const SCREENS = [
           </div>
         </div>
         <div class="factgrid factgrid-4">${facts}</div>
-        <div class="honestpanel" style="margin-top:8px">
-          <b>${t(SCENARIO.label)}</b>
-          ${t({
-            lt: `Komplektas: ${NUM(SIZING.pv)} kW PV · ${NUM(SIZING.inverter, 0)} kW inverteris · ${NUM(SIZING.battery)} kWh kaupiklis. Atsiperkamumas perkant iš karto: ${NUM(PAYBACK.yearsNoSubsidy, 1)} m. be paramos, ${NUM(PAYBACK.yearsWithSubsidy30, 1)} m. su 30 % parama.`,
-            en: `Bundle: ${NUM(SIZING.pv)} kW PV · ${NUM(SIZING.inverter, 0)} kW inverter · ${NUM(SIZING.battery)} kWh battery. Payback if bought outright: ${NUM(PAYBACK.yearsNoSubsidy, 1)} yr with no subsidy, ${NUM(PAYBACK.yearsWithSubsidy30, 1)} yr with 30% subsidy.` })}
-        </div>
       </div>`;
   },
 },
