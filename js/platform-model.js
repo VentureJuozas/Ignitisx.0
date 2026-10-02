@@ -6,8 +6,9 @@
 
    Financed monthly figures for the full-system lead quote match the case table:
    €140 today → €39 electricity + €86 instalment = €125, saving €15/mo.
-   Export (€30/yr) and flexibility (€15/yr) are shown as annual case figures;
-   the €39 electricity line is already net of those effects. */
+   Export (€30/yr) is an annual case figure; flexibility (€15/mo lead case) is
+   the customer's average monthly share. The €39 electricity line is already
+   net of those effects. */
 
 const LANG = { current: "lt" };
 
@@ -106,7 +107,7 @@ const FULL_CONTRACTORS = [
     billAfter: 39,
     purchasedElectricity: 84,
     exportAnnual: 30,
-    flexAnnual: 15,
+    flexMonthly: 15,
   }),
   contractorShell({
     id: "ev",
@@ -126,7 +127,7 @@ const FULL_CONTRACTORS = [
     billAfter: 41,
     purchasedElectricity: 86,
     exportAnnual: 28,
-    flexAnnual: 14,
+    flexMonthly: 14,
     response: { lt: "Reakcija per 72 val.", en: "72-hour response" },
   }),
   contractorShell({
@@ -147,7 +148,7 @@ const FULL_CONTRACTORS = [
     billAfter: 36,
     purchasedElectricity: 80,
     exportAnnual: 34,
-    flexAnnual: 18,
+    flexMonthly: 18,
     response: { lt: "Reakcija per 24 val.", en: "24-hour response" },
   }),
   contractorShell({
@@ -168,7 +169,7 @@ const FULL_CONTRACTORS = [
     billAfter: 44,
     purchasedElectricity: 90,
     exportAnnual: 26,
-    flexAnnual: 12,
+    flexMonthly: 12,
     response: { lt: "Reakcija per 5 d. d.", en: "Five-working-day response" },
   }),
 ];
@@ -186,7 +187,7 @@ const ADDON_CONTRACTORS = [
     billAfter: 53,
     purchasedElectricity: 62,
     exportAnnual: 22,
-    flexAnnual: 15,
+    flexMonthly: 15,
   }),
   contractorShell({
     id: "ev",
@@ -206,7 +207,7 @@ const ADDON_CONTRACTORS = [
     billAfter: 54,
     purchasedElectricity: 63,
     exportAnnual: 20,
-    flexAnnual: 14,
+    flexMonthly: 14,
     response: { lt: "Reakcija per 72 val.", en: "72-hour response" },
   }),
   contractorShell({
@@ -227,7 +228,7 @@ const ADDON_CONTRACTORS = [
     billAfter: 49,
     purchasedElectricity: 58,
     exportAnnual: 24,
-    flexAnnual: 18,
+    flexMonthly: 18,
     response: { lt: "Reakcija per 24 val.", en: "24-hour response" },
   }),
   contractorShell({
@@ -248,7 +249,7 @@ const ADDON_CONTRACTORS = [
     billAfter: 56,
     purchasedElectricity: 66,
     exportAnnual: 18,
-    flexAnnual: 12,
+    flexMonthly: 12,
     response: { lt: "Reakcija per 5 d. d.", en: "Five-working-day response" },
   }),
 ];
@@ -367,7 +368,7 @@ function instalment(price, years, rate) {
 }
 
 /* billAfter is the net electricity line from the case table (€39 full / €53 add-on).
-   Export and flexibility annuals are informational; they are already inside billAfter. */
+   Export annual and flexMonthly are informational; they are already inside billAfter. */
 function quote(contractorId, lenderId) {
   const c = contractorById(contractorId);
   const lender = lenderById(lenderId);
@@ -388,7 +389,7 @@ function quote(contractorId, lenderId) {
     interestPaid: totalRepaid - c.price,
     upfront: 0,
     exportAnnual: c.exportAnnual,
-    flexAnnual: c.flexAnnual,
+    flexMonthly: c.flexMonthly,
     purchasedElectricity: c.purchasedElectricity,
   };
 }
@@ -407,7 +408,7 @@ function upfrontQuote(contractorId) {
     years: 0,
     lender: null,
     exportAnnual: c.exportAnnual,
-    flexAnnual: c.flexAnnual,
+    flexMonthly: c.flexMonthly,
     purchasedElectricity: c.purchasedElectricity,
     payback: PAYBACK,
   };
@@ -437,9 +438,11 @@ const MONTH = {
     lt: "Kovo 14 d., 19:42, 34 minutės",
     en: "14 March, 19:42, 34 minutes",
   },
-  flexGross: 4,
+  /* Scaled so a typical lead-case month credits ~€22 (above the €15/mo average)
+     and January stays clearly below average. */
+  flexGross: 61,
   previousMonth: {
     label: { lt: "sausį", en: "in January" },
-    earned: 1,
+    earned: 10,
   },
 };

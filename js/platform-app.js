@@ -646,12 +646,12 @@ const SCREENS = [
   render: () => {
     const q = activeQuote();
     const c = q.contractor;
-    const withoutFlex = q.monthly + (c.flexAnnual / 12);
+    const withoutFlex = q.monthly + c.flexMonthly;
 
     const choices = [
       ["yes", t({ lt: "Sutinku su kaupiklio valdymu", en: "I agree to battery control" }),
-        t({ lt: `Ignitis valdo įkrovimą ir iškrovimą, Jums lieka ${FLEX.reserveKwh} kWh rezervas. Uždirbtą vertę dalijamės — vidutiniškai apie ${EUR((c.flexAnnual / 12))}/mėn. Jums.`,
-            en: `Ignitis controls charge and discharge, you keep a ${FLEX.reserveKwh} kWh reserve. We share the value we create — around ${EUR((c.flexAnnual / 12))}/month to you on average.` })],
+        t({ lt: `Ignitis valdo įkrovimą ir iškrovimą, Jums lieka ${FLEX.reserveKwh} kWh rezervas. Uždirbtą vertę dalijamės — vidutiniškai apie ${EUR(c.flexMonthly)}/mėn. Jums.`,
+            en: `Ignitis controls charge and discharge, you keep a ${FLEX.reserveKwh} kWh reserve. We share the value we create — around ${EUR(c.flexMonthly)}/month to you on average.` })],
       ["no", t({ lt: "Nesutinku", en: "I decline" }),
         t({ lt: "Kaupiklį valdau tik aš. Platformos pasiūlymo tokiu atveju nėra.",
             en: "I control the battery myself. In that case there is no platform offer." })],
@@ -682,8 +682,8 @@ const SCREENS = [
       <div class="callout">
         <b>${t({ lt: "Uždirbtą vertę dalijamės", en: "We share the value we create" })}</b>
         ${t({
-          lt: `${NUM(c.battery, 2)} kWh kaupikliui tai vidutiniškai apie ${EUR((c.flexAnnual / 12))}/mėn., arba ${EUR((c.flexAnnual / 12) * 12)}/metus — bet tai vidurkis, o ne garantija: gerą mėnesį suma didesnė, tylų mėnesį mažesnė. Kiekvieną mėnesį sąskaitoje matysite ir bendrą sumą, ir savo dalį.`,
-          en: `For a ${NUM(c.battery, 2)} kWh battery that averages around ${EUR((c.flexAnnual / 12))}/month, or ${EUR((c.flexAnnual / 12) * 12)} a year — but it is an average, not a guarantee: a good month pays more, a quiet one less. Every invoice shows both the gross figure and your share.` })}
+          lt: `${NUM(c.battery, 2)} kWh kaupikliui tai vidutiniškai apie ${EUR(c.flexMonthly)}/mėn., arba ${EUR(c.flexMonthly * 12)}/metus — bet tai vidurkis, o ne garantija: gerą mėnesį suma didesnė, tylų mėnesį mažesnė. Kiekvieną mėnesį sąskaitoje matysite ir bendrą sumą, ir savo dalį.`,
+          en: `For a ${NUM(c.battery, 2)} kWh battery that averages around ${EUR(c.flexMonthly)}/month, or ${EUR(c.flexMonthly * 12)} a year — but it is an average, not a guarantee: a good month pays more, a quiet one less. Every invoice shows both the gross figure and your share.` })}
       </div>
 
       <div class="choices stack">${choices}</div>
@@ -1112,10 +1112,10 @@ const SCREENS = [
            en: "Grid permission to generate, and the battery is connected to the Ignitis platform. From this day it starts earning." })],
       [t({ lt: "Pirmoji sąskaita", en: "First invoice" }),
        financed
-         ? t({ lt: `Mėnesį po priėmimo, Ignitis savitarnoje. Vienoje sąskaitoje: elektra, ${EUR(q.loan, 2)} paskolos įmoka „${q.lender.name}“ ir Jūsų lankstumo pajamų dalis — vidutiniškai apie ${EUR((c.flexAnnual / 12))}.`,
-             en: `A month after sign-off, in Ignitis savitarna. One invoice with the electricity, the ${EUR(q.loan, 2)} instalment to ${q.lender.name}, and your share of the flexibility revenue — around ${EUR((c.flexAnnual / 12))} on average.` })
-         : t({ lt: `Mėnesį po priėmimo, Ignitis savitarnoje. Vienoje sąskaitoje: elektra ir Jūsų lankstumo pajamų dalis — vidutiniškai apie ${EUR((c.flexAnnual / 12))}. Paskolos nėra.`,
-             en: `A month after sign-off, in Ignitis savitarna. One invoice with the electricity and your share of the flexibility revenue — around ${EUR((c.flexAnnual / 12))} on average. No loan.` })],
+         ? t({ lt: `Mėnesį po priėmimo, Ignitis savitarnoje. Vienoje sąskaitoje: elektra, ${EUR(q.loan, 2)} paskolos įmoka „${q.lender.name}“ ir Jūsų lankstumo pajamų dalis — vidutiniškai apie ${EUR(c.flexMonthly)}/mėn.`,
+             en: `A month after sign-off, in Ignitis savitarna. One invoice with the electricity, the ${EUR(q.loan, 2)} instalment to ${q.lender.name}, and your share of the flexibility revenue — around ${EUR(c.flexMonthly)}/month on average.` })
+         : t({ lt: `Mėnesį po priėmimo, Ignitis savitarnoje. Vienoje sąskaitoje: elektra ir Jūsų lankstumo pajamų dalis — vidutiniškai apie ${EUR(c.flexMonthly)}/mėn. Paskolos nėra.`,
+             en: `A month after sign-off, in Ignitis savitarna. One invoice with the electricity and your share of the flexibility revenue — around ${EUR(c.flexMonthly)}/month on average. No loan.` })],
     ].map(([b, s]) => `<li><b>${b}</b><span>${s}</span></li>`).join("");
 
     return `
@@ -1226,8 +1226,8 @@ const SCREENS = [
           <div class="billrow foot"><span>${t({ lt: "Iš viso", en: "Total" })}</span><span class="mono">${EUR(total, 2)}</span></div>
         </div>
         <p style="font-size:13px;color:var(--navy-45);margin-top:14px">${t({
-          lt: `Pasirašant skaičiavome vidutiniškai ${EUR((c.flexAnnual / 12))}/mėn. Šis mėnuo buvo geresnis: rinkoje uždirbta ${EUR(flexGross)}, todėl Jums įskaityta ${EUR(credited)}. Sausį kaupiklis uždirbo tik ${EUR(MONTH.previousMonth.earned)}, ir tą mėnesį Jums atiteko ${EUR(Math.round(MONTH.previousMonth.earned * FLEX.share))}. Dalijamės visada; suma kinta.`,
-          en: `At signing we quoted an average of ${EUR((c.flexAnnual / 12))}/month. This month was better: ${EUR(flexGross)} was earned in the market, so ${EUR(credited)} was credited to you. In January the battery earned only ${EUR(MONTH.previousMonth.earned)}, and your share that month was ${EUR(Math.round(MONTH.previousMonth.earned * FLEX.share))}. We always share; the amount changes.` })}</p>
+          lt: `Pasirašant skaičiavome vidutiniškai ${EUR(c.flexMonthly)}/mėn. Šis mėnuo buvo geresnis: rinkoje uždirbta ${EUR(flexGross)}, todėl Jums įskaityta ${EUR(credited)}. Sausį kaupiklis uždirbo tik ${EUR(MONTH.previousMonth.earned)}, ir tą mėnesį Jums atiteko ${EUR(Math.round(MONTH.previousMonth.earned * FLEX.share))}. Dalijamės visada; suma kinta.`,
+          en: `At signing we quoted an average of ${EUR(c.flexMonthly)}/month. This month was better: ${EUR(flexGross)} was earned in the market, so ${EUR(credited)} was credited to you. In January the battery earned only ${EUR(MONTH.previousMonth.earned)}, and your share that month was ${EUR(Math.round(MONTH.previousMonth.earned * FLEX.share))}. We always share; the amount changes.` })}</p>
       </div>
 
       <div class="card">
