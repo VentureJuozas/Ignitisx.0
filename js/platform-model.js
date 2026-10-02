@@ -1,7 +1,7 @@
 /* Value model for the Ignitis platform demo — contractor variant.
 
    Two demo scenarios share the same flow:
-   - full: 7.3 kW PV + 10 kW inverter + 11.52 kWh BESS at €7,995
+   - full: 7.3 kW PV + 10 kW inverter + 11.52 kWh BESS at €7,995, 7,000 kWh/yr household
    - addon: BESS only (PV already on the roof) at €3,565, 7,000 kWh/yr household
 
    Financed monthly figures for the full-system lead quote match the case table:
@@ -304,7 +304,7 @@ const SCENARIOS = {
         lt: "Du vaikai · abu tėvai darbo dienomis dirba ne namuose",
         en: "Two kids · both parents work away from home on weekdays",
       },
-      consumption: 10000,
+      consumption: 7000,
       heatPumpYear: 2021,
       evYear: 2024,
       currentMonthlyCost: 140,
@@ -317,8 +317,8 @@ const SCENARIOS = {
       inverter: 10,
       battery: 11.52,
       basis: {
-        lt: "Pagal ~10 000 kWh metinį vartojimą ir vakarinį piką — 7,3 kW PV, 10 kW inverteris, 11,52 kWh kaupiklis",
-        en: "From ~10,000 kWh of annual use and the evening peak — 7.3 kW PV, 10 kW inverter, 11.52 kWh battery",
+        lt: "Pagal ~7 000 kWh metinį vartojimą ir vakarinį piką — 7,3 kW PV, 10 kW inverteris, 11,52 kWh kaupiklis",
+        en: "From ~7,000 kWh of annual use and the evening peak — 7.3 kW PV, 10 kW inverter, 11.52 kWh battery",
       },
     },
     payback: {
