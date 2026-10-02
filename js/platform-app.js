@@ -140,36 +140,19 @@ function prevIndex(i) {
 }
 
 
-/* Where the monthly figure comes from. Electricity components (purchased /
-   export / flexibility) are shown as separate rows so the net billAfter line
-   is readable; export and flex annuals are converted to monthly equivalents.
-   Those components are informational — billAfter is already net of them.
-   Then loan (if financed), total, current bill, and saving. */
+/* Where the monthly figure comes from. One electricity line (billAfter — already
+   net of export and flexibility), then loan (if financed), total, current bill,
+   and saving. */
 function breakdown(q) {
   const c = q.contractor;
   const financed = Boolean(q.lender);
-  const exportMonthly = c.exportAnnual / 12;
-  const flexMonthly = c.flexAnnual / 12;
 
-  /* cls: "" | "detail" | "sub" — detail rows explain the net; only sub + loan
-     count toward the monthly total visually. credit paints the value green. */
+  /* cls: "" | "sub" — energy + loan feed the total; credit paints the value green. */
   const rows = [
-    [t({ lt: "Įsigyjama elektra", en: "Purchased electricity" }),
-     t({ lt: "Likę tinklo pirkimai su PV ir kaupikliu",
-         en: "Remaining grid imports with PV and battery" }),
-     c.purchasedElectricity, false, "detail"],
-    [t({ lt: "Eksporto kreditas", en: "Export credit" }),
-     t({ lt: `${EUR(c.exportAnnual)}/metus → mėnesio ekvivalentas — jau įskaičiuota`,
-         en: `${EUR(c.exportAnnual)}/yr → monthly equivalent — already included` }),
-     -exportMonthly, true, "detail"],
-    [t({ lt: "Lankstumo dalis", en: "Flexibility share" }),
-     t({ lt: `${EUR(c.flexAnnual)}/metus → mėnesio ekvivalentas — jau įskaičiuota`,
-         en: `${EUR(c.flexAnnual)}/yr → monthly equivalent — already included` }),
-     -flexMonthly, true, "detail"],
     [t({ lt: "Elektra su PV + kaupikliu", en: "Electricity with PV + battery" }),
-     t({ lt: "Grynoji elektros eilutė — eksportas ir lankstumas jau įskaičiuoti",
-         en: "Net electricity line — export and flexibility already included" }),
-     c.billAfter, false, "sub"],
+     t({ lt: "(lankstumo vertė jau įskaičiuota)",
+         en: "(flexibility value already included)" }),
+     c.billAfter, false, ""],
   ];
   if (financed) {
     rows.push([t({ lt: `Paskolos įmoka · ${q.lender.name}`, en: `Loan instalment · ${q.lender.name}` }),
