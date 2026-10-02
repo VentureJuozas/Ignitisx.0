@@ -432,7 +432,6 @@ const SCREENS = [
           </div>
         </div>
         <ul class="specs">${specs}</ul>
-        <div class="honest">${t(c.honest)}</div>
       </button>`;
     }).join("");
 
@@ -491,7 +490,6 @@ const SCREENS = [
           <li><span class="sk">${t({ lt: "Po atsipirkimo", en: "After payback" })}</span>
             <span class="sv">~${EUR(PAYBACK.afterPaybackSaving)}/${t({ lt: "mėn.", en: "mo" })}</span></li>
         </ul>
-        <div class="honest">${t(c.honest)}</div>
       </button>`;
     }).join("") : "";
 
